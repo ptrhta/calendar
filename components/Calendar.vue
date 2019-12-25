@@ -1,21 +1,72 @@
 <template>
-  <div id="canvas-wrap" ref="wrap">
-    <canvas ref="canvas" />
-    <div class="scaleSelection">
-      <span>Масштаб:</span>
-      <select v-model="selected">
-        <option disabled value="">Выберите масштаб</option>
-        <option>1 день</option>
-        <option>1 неделя</option>
-        <option>1 месяц</option>
-        <option>3 месяца</option>
-      </select>
+  <div class="calendar-wrap">
+    <h1>Календарь</h1>
+    <div class="row">
+      <div class="doers">
+        <div class="doer" v-for="doer in doers" :key="doer.id">
+          <img class="img" :src="doer.avatar" alt="" />
+        </div>
+      </div>
+      <div id="canvas-wrap" ref="wrap">
+        <canvas ref="canvas" />
+      </div>
+    </div>
+    <div class="row options">
+      <div class="scaleSelection">
+        <span>Масштаб:</span>
+        <select v-model="selected">
+          <option
+            v-for="(option, index) in scaleOptions"
+            :key="'so-' + index"
+            :value="option.value"
+            v-text="option.text"
+          ></option>
+        </select>
+      </div>
+    </div>
+    <div class="row options">
+      <pre>{{ debug }}</pre>
     </div>
   </div>
 </template>
 
 <script>
-import calendar from '../assets/tasks.json'
+import calendarData from '../assets/tasks.json'
+
+const CALENDAR_SCALES = {
+  DAY: 10,
+  WEEK: 20,
+  MONTH: 30,
+  QUARTER: 40,
+}
+
+const TIME_SCALE = {
+  DAY: 'день',
+  WEEK: 'неделя',
+  MONTH: 'месяц',
+  QUARTER: 'квартал',
+}
+
+const UNITS_IN_PX = {
+  DAY: 300,
+  WEEK: 350,
+  MONTH: 500,
+  QUARTER: 1000,
+}
+const S_DAY = 60 * 60 * 24
+// const MS_DAY = 1000 * S_DAY
+const TIME_IN_UNITS = {
+  DAY: S_DAY,
+  WEEK: S_DAY * 7,
+  MONTH: S_DAY * 30,
+  QUARTER: S_DAY * 92,
+}
+
+const HEIGHT_OF_LABELS = 40 // Смещение сверху от края канваса до начала области с данными
+const LABEL_PADDING = 8 // отступ от подписей в шапке
+const DEFAULT_LINE_WIDTH = 0.3 // толщина линии по умолчанию
+const DEFAULT_STROKE_COLOR = '#000000' // цвет рисования по умолчанию
+const ROW_HEIGHT = 40 // высота строки на календареы
 
 export default {
   data: () => ({
@@ -25,18 +76,44 @@ export default {
     maxX: null, // максимум по шкале X
     userY: 110,
     horizontalLineY: 0,
-    selected: '',
+    selected: 'DAY',
     allDates: [],
     datesForScale: [],
     widthUnit: 0,
   }),
 
+  computed: {
+    scaleOptions() {
+      return Object.keys(TIME_SCALE).map(key => ({
+        text: TIME_SCALE[key],
+        value: key,
+      }))
+    },
+
+    doers() {
+      return calendarData.doers
+    },
+
+    debug() {
+      let minX = new Date()
+      minX.setTime(this.minX * 1000)
+      let maxX = new Date()
+      maxX.setTime(this.maxX * 1000)
+      return {
+        minX,
+        maxX,
+        gMinX: this.gMinX,
+        gMaxX: this.gMaxX,
+        doersLength: Object.values(this.doers).length,
+      }
+    },
+  },
+
   watch: {
     // эта функция запускается при любом изменении вопроса
     selected: function() {
-      const ctx = this.$refs['canvas'].getContext('2d')
-      this.init(ctx)
-      this.drawDates(ctx)
+      this.init(this.ctx)
+      this.drawDates()
     },
   },
 
@@ -46,13 +123,11 @@ export default {
     canvas.width = canvas.parentElement.clientWidth
     canvas.height = this.$refs['canvas'].parentElement.clientHeight
 
-    // Сохранить в this.ctx 2d context canvas'а, причем
-    // не нужно его ставить внутри data, так как на контексте
-    // не будет никаких observer'ов изменений
-    // P.S.: canvas должен занимать 100% от его родителя wrap
+    // Сохранить в this.ctx 2d context canvas'а
     this.ctx = canvas.getContext('2d')
 
     this.init(this.ctx)
+    this.drawDates()
   },
 
   methods: {
@@ -66,68 +141,92 @@ export default {
         this.$refs['canvas'].width,
         this.$refs['canvas'].height,
       )
-      this.userY = 110
+      // this.userY = 0
       this.widthUnit = 0
 
-      this.showTitle(ctx)
+      this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'blue')
 
-      this.horizontalLineY = 90
-      this.drawHorizontalLine(ctx, this.horizontalLineY)
-      this.horizontalLineY += this.horizontalLineY / 2.5
+      for (let i = 0; i < Object.values(this.doers).length; i++) {
+        this.drawHorizontalLine(
+          HEIGHT_OF_LABELS + ROW_HEIGHT / 2 + i * ROW_HEIGHT,
+        )
+      }
 
-      this.drawVerticalLine(ctx, 60, 54, 0.4, this.$refs['canvas'].height)
+      // Prepare data
+      let keys = Object.keys(calendarData.calendar)
+      if (Array.isArray(keys) && keys.length > 0) {
+        let allDates = []
+        let gMinX, gMaxX
+        keys.forEach(doerId => {
+          let doerBlocks = calendarData.calendar[doerId]
+          if (Array.isArray(doerBlocks) && doerBlocks.length > 0) {
+            doerBlocks.forEach(block => {
+              if (!gMinX) gMinX = block.startAt
+              if (!gMaxX) gMaxX = block.finishAt
+              if (gMinX > block.startAt) gMinX = block.startAt
+              if (gMaxX < block.finishAt) gMaxX = block.finishAt
+              block.doerId = doerId
+              allDates.push(block)
+            })
+          }
+        })
+        this.gMinX = gMinX
+        this.minX = gMinX
+        this.gMaxX = gMaxX
+        this.allDates = allDates
+        this.maxX = parseInt(
+          gMinX +
+            (this.$refs['canvas'].width / UNITS_IN_PX[this.selected]) *
+              TIME_IN_UNITS[this.selected],
+        )
+      }
 
-      for (let user of calendar) {
-        // eslint-disable-next-line no-console
-        console.log(user.doers[Object.keys(user.doers)].avatar)
-
-        this.drawAvatar(ctx, user.doers[Object.keys(user.doers)].avatar)
-        this.userY = this.userY + 40
-
-        this.drawHorizontalLine(ctx, this.horizontalLineY)
-        this.horizontalLineY += 40
-
+      /* for (let user of calendarData.calendar) {
         this.sortDate(
           user.calendar[Object.keys(user.calendar)[0]],
           Object.keys(user.calendar)[0],
         )
-      }
+      } */
     },
 
-    showTitle(ctx) {
-      ctx.font = '25px Verdana'
-      ctx.fillText('Календарь', 20, 40)
-    },
-
-    drawAvatar(ctx, img) {
-      let avatar = new Image()
-      var userY = this.userY
-      avatar.onload = function() {
-        ctx.drawImage(avatar, 15, userY, 30, 30)
-      }
-      avatar.src = img
-    },
-
-    drawVerticalLine(ctx, x, y, width, height) {
+    drawVerticalLine(
+      offset,
+      width = DEFAULT_LINE_WIDTH,
+      color = DEFAULT_STROKE_COLOR,
+      endY = this.$refs['canvas'].height,
+      startY = HEIGHT_OF_LABELS,
+    ) {
+      let ctx = this.ctx
+      ctx.save()
       ctx.beginPath()
-      ctx.moveTo(x, y)
+      ctx.moveTo(offset, startY)
+      ctx.lineTo(offset, endY)
       ctx.lineWidth = width
-      ctx.lineTo(x, height)
+      ctx.strokeStyle = color
       ctx.stroke()
       ctx.restore()
     },
 
-    drawHorizontalLine(ctx, indent) {
+    drawHorizontalLine(
+      offset,
+      width = DEFAULT_LINE_WIDTH,
+      color = DEFAULT_STROKE_COLOR,
+    ) {
+      let ctx = this.ctx
+      ctx.save()
       ctx.beginPath()
-      ctx.moveTo(60, indent)
-      ctx.lineWidth = 0.2
-      ctx.lineTo(this.$refs['canvas'].width, indent)
+      ctx.moveTo(0, offset)
+      ctx.lineWidth = width
+      ctx.strokeStyle = color
+      ctx.lineTo(this.$refs['canvas'].width, offset)
       ctx.stroke()
       ctx.restore()
     },
 
     sortDate(tasks, id) {
-      for (let task of tasks) this.allDates.push([task, id])
+      for (let task of tasks) {
+        this.allDates.push([task, id])
+      }
 
       this.allDates.sort((a, b) => a[0].finishAt - b[0].finishAt)
       this.gMaxX = this.allDates[this.allDates.length - 1][0].finishAt
@@ -240,39 +339,50 @@ export default {
       }
     },
 
-    drawDates(ctx) {
-      let widthMax = this.$refs['canvas'].width + 60
+    drawDates() {
+      let ctx = this.ctx
+      ctx.save()
 
-      if (this.selected === '1 день') {
+      // Первый юнит входящий (можно частично) в область просмотра
+      let start = new Date()
+      start.setTime(this.minX)
+      start.setHours(0, 0, 0, 0)
+      // TODO: Пройти до конца области просмотра в цикле по размеру юнита
+      // Подписать ось и расставить вертикали
+
+      let widthMax = this.$refs['canvas'].width
+
+      if (this.selected === CALENDAR_SCALES.DAY) {
         this.getDaysForScale()
-        this.widthUnit = 350
+        this.widthUnit = UNITS_IN_PX.DAY
 
         let maxDays = (widthMax / this.widthUnit).toFixed(0)
 
         ctx.font = '11px Verdana'
 
         for (let day = 1; day <= maxDays; day++) {
-          this.drawVerticalLine(
-            ctx,
-            60 + day * this.widthUnit,
-            60,
-            0.2,
-            this.$refs['canvas'].height - 40 - day,
-          )
+          this.drawVerticalLine(60 + day * this.widthUnit)
         }
 
         let i = 0
         for (let date of this.datesForScale) {
-          ctx.fillText(date, 70 + i * this.widthUnit, 80)
+          ctx.fillText(
+            date,
+            70 + i * this.widthUnit,
+            HEIGHT_OF_LABELS - LABEL_PADDING,
+          )
           i++
         }
       }
-      if (this.selected === '1 неделя' || this.selected === '1 месяц') {
-        this.selected === '1 неделя'
+      if (
+        this.selected === CALENDAR_SCALES.WEEK ||
+        this.selected === CALENDAR_SCALES.MONTH
+      ) {
+        this.selected === CALENDAR_SCALES.WEEK
           ? this.getWeeksForScale()
           : this.getMonthesForScale()
 
-        this.widthUnit = 700
+        this.widthUnit = UNITS_IN_PX.WEEK
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
@@ -280,7 +390,6 @@ export default {
 
         for (let day = 1; day <= maxWeeks; day++) {
           this.drawVerticalLine(
-            ctx,
             60 + day * this.widthUnit,
             60,
             0.2,
@@ -304,22 +413,16 @@ export default {
           }
         }
       }
-      if (this.selected === '3 месяца') {
+      if (this.selected === 'QUARTER') {
         this.getThreeMonthesForScale()
-        this.widthUnit = 1200
+        this.widthUnit = UNITS_IN_PX.QUARTER
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
         ctx.font = '11px Verdana'
 
         for (let day = 1; day <= maxWeeks; day++) {
-          this.drawVerticalLine(
-            ctx,
-            60 + day * this.widthUnit,
-            60,
-            0.2,
-            this.$refs['canvas'].height - 40 - day,
-          )
+          this.drawVerticalLine(60 + day * this.widthUnit)
         }
 
         for (let i = 0; i < this.datesForScale.length; i += 2) {
@@ -339,15 +442,13 @@ export default {
         }
       }
 
-      this.horizontalLineY = 114
-
-      for (let user of calendar) {
-        this.drawBlocks(ctx, user)
-        this.horizontalLineY += 40
-      }
+      // for (let user of calendarData) {
+      //   // this.drawBlocks(ctx, user)
+      // }
+      ctx.restore()
     },
 
-    drawBlocks(ctx, user) {
+    /* drawBlocks(ctx, user) {
       let datesForUser = user.calendar[Object.keys(user.calendar)[0]].sort(
         (a, b) => a.startAt - b.startAt,
       )
@@ -375,6 +476,17 @@ export default {
         //ctx.fillRect(60 + start , this.horizontalLineY, 1,25);
       }
       return ctx + user
+    }, */
+
+    // Не задействовано
+    // Рисует аватар пользователя
+    drawAvatar(ctx, img) {
+      let avatar = new Image()
+      var userY = this.userY
+      avatar.onload = function() {
+        ctx.drawImage(avatar, 15, userY, 30, 30)
+      }
+      avatar.src = img
     },
   },
 }
@@ -385,20 +497,51 @@ export default {
 body {
   background-color: lightgray;
 }
-#canvas-wrap {
+.row {
+  display: flex;
+}
+.doers {
+  margin-right: 0.5rem;
+  padding-top: 40px;
+}
+.doers .doer {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.25rem 0 0.5rem;
+}
+.doers .doer .img {
+  width: 100%;
+}
+
+.calendar-wrap {
+  box-sizing: border-box;
+  width: 1000px;
   margin: 0 auto;
+  background-color: #ccc;
+  padding: 1rem;
+}
+#canvas-wrap {
+  margin: 0;
   width: 800px;
   height: 600px;
   background: #fff;
+}
+h1 {
+  font-family: 'Verdana';
+  font-weight: 400;
+  margin: 0 0 1rem;
 }
 span {
   font-family: 'Verdana';
   font-size: 12px;
   padding-right: 2px;
 }
-.scaleSelection {
-  position: absolute;
-  margin-top: -35px;
-  margin-left: 350px;
+.options {
+  padding: 0.5rem 0 0;
 }
 </style>
