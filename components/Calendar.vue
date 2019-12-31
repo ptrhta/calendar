@@ -33,12 +33,12 @@
 <script>
 import calendarData from '../assets/tasks.json'
 
-const CALENDAR_SCALES = {
+/*const CALENDAR_SCALES = {
   DAY: 10,
   WEEK: 20,
   MONTH: 30,
   QUARTER: 40,
-}
+}*/
 
 const TIME_SCALE = {
   DAY: 'день',
@@ -80,6 +80,7 @@ export default {
     allDates: [],
     datesForScale: [],
     widthUnit: 0,
+    left: 0,
   }),
 
   computed: {
@@ -112,6 +113,7 @@ export default {
   watch: {
     // эта функция запускается при любом изменении вопроса
     selected: function() {
+      this.left = 0;
       this.init(this.ctx)
       this.drawDates()
     },
@@ -125,6 +127,37 @@ export default {
 
     // Сохранить в this.ctx 2d context canvas'а
     this.ctx = canvas.getContext('2d')
+
+    let dragging = false;
+    let lastX;
+
+    let context = this
+
+    canvas.addEventListener('mousedown', function(e) {
+        var evt = e || event;
+        dragging = true;
+        lastX = evt.clientX;
+        e.preventDefault();
+    }, false);
+
+    window.addEventListener('mousemove', function(e) {
+        var evt = e || event;
+        if (dragging) {
+            let delta = evt.clientX - lastX;
+            lastX = evt.clientX;
+            context.left += delta;
+            context.init(context.ctx)
+            if (context.left >= 0) {
+              context.left = 0;
+            }
+            context.drawDates()
+        }
+        e.preventDefault();
+    }, false);
+
+    window.addEventListener('mouseup', function() {
+        dragging = false;
+    }, false);
 
     this.init(this.ctx)
     this.drawDates()
@@ -141,8 +174,10 @@ export default {
         this.$refs['canvas'].width,
         this.$refs['canvas'].height,
       )
+     
       // this.userY = 0
       this.widthUnit = 0
+
 
       this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'blue')
 
@@ -151,7 +186,6 @@ export default {
           HEIGHT_OF_LABELS + ROW_HEIGHT / 2 + i * ROW_HEIGHT,
         )
       }
-
       // Prepare data
       let keys = Object.keys(calendarData.calendar)
       if (Array.isArray(keys) && keys.length > 0) {
@@ -180,13 +214,7 @@ export default {
               TIME_IN_UNITS[this.selected],
         )
       }
-
-      /* for (let user of calendarData.calendar) {
-        this.sortDate(
-          user.calendar[Object.keys(user.calendar)[0]],
-          Object.keys(user.calendar)[0],
-        )
-      } */
+      this.sortDate()  
     },
 
     drawVerticalLine(
@@ -210,7 +238,7 @@ export default {
     drawHorizontalLine(
       offset,
       width = DEFAULT_LINE_WIDTH,
-      color = DEFAULT_STROKE_COLOR,
+      color = DEFAULT_STROKE_COLOR, 
     ) {
       let ctx = this.ctx
       ctx.save()
@@ -223,24 +251,22 @@ export default {
       ctx.restore()
     },
 
-    sortDate(tasks, id) {
-      for (let task of tasks) {
-        this.allDates.push([task, id])
-      }
+    sortDate() {
+      this.allDates.sort((a, b) => a.finishAt - b.finishAt)
+      this.gMaxX = this.allDates[this.allDates.length - 1].finishAt
 
-      this.allDates.sort((a, b) => a[0].finishAt - b[0].finishAt)
-      this.gMaxX = this.allDates[this.allDates.length - 1][0].finishAt
+      this.allDates.sort((a, b) => a.startAt - b.startAt)
+      this.gMinX = this.allDates[0].startAt
 
-      this.allDates.sort((a, b) => a[0].startAt - b[0].startAt)
-      this.gMinX = this.allDates[0][0].startAt
-
-      for (let date of this.allDates) {
+      // Для проверки
+     /* for (let date of this.allDates) {
         let dayMax = new Date()
-        dayMax.setTime(dayMax - date[0].startAt)
+        dayMax.setTime(dayMax - date.startAt)
 
         // eslint-disable-next-line no-console
         console.log(dayMax.toLocaleString())
-      }
+      } */
+      this.getDaysForScale();
     },
 
     getDaysForScale() {
@@ -262,6 +288,8 @@ export default {
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
         dayMax = new Date(dayMax - 86400000)
       }
+      // eslint-disable-next-line no-console
+       // console.log(this.datesForScale)
     },
 
     getWeeksForScale() {
@@ -287,6 +315,9 @@ export default {
         dayMax = new Date(dayMax - 86400000)
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
       }
+      // eslint-disable-next-line no-console
+       // console.log(this.datesForScale)
+
     },
 
     getMonthesForScale() {
@@ -352,47 +383,60 @@ export default {
 
       let widthMax = this.$refs['canvas'].width
 
-      if (this.selected === CALENDAR_SCALES.DAY) {
+      if (this.selected === 'DAY') {
         this.getDaysForScale()
         this.widthUnit = UNITS_IN_PX.DAY
 
-        let maxDays = (widthMax / this.widthUnit).toFixed(0)
+        let maxDays = +(widthMax / this.widthUnit).toFixed(0)
+
+        let widthMaxCanvas = (this.datesForScale.length - maxDays)*this.widthUnit + (maxDays*this.widthUnit - widthMax)
+        if (this.left*(-1) > widthMaxCanvas) {
+          this.left = (-1)*widthMaxCanvas
+        }
 
         ctx.font = '11px Verdana'
 
-        for (let day = 1; day <= maxDays; day++) {
-          this.drawVerticalLine(60 + day * this.widthUnit)
+        for (let day = 1; day <= this.datesForScale.length; day++) {
+          this.drawVerticalLine(day * this.widthUnit + this.left)
         }
 
         let i = 0
+
         for (let date of this.datesForScale) {
           ctx.fillText(
             date,
-            70 + i * this.widthUnit,
+            20 + i * this.widthUnit + this.left,
             HEIGHT_OF_LABELS - LABEL_PADDING,
           )
           i++
         }
       }
       if (
-        this.selected === CALENDAR_SCALES.WEEK ||
-        this.selected === CALENDAR_SCALES.MONTH
+        this.selected === 'WEEK' ||
+        this.selected === 'MONTH'
       ) {
-        this.selected === CALENDAR_SCALES.WEEK
-          ? this.getWeeksForScale()
-          : this.getMonthesForScale()
-
-        this.widthUnit = UNITS_IN_PX.WEEK
+        if (this.selected === 'WEEK') {
+          this.getWeeksForScale()
+          this.widthUnit = UNITS_IN_PX.WEEK
+        } else { 
+            this.getMonthesForScale()
+            this.widthUnit = UNITS_IN_PX.MONTH
+        }
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
+        let widthMaxCanvas = ((this.datesForScale.length/2).toFixed(0) - maxWeeks)*this.widthUnit + (maxWeeks*this.widthUnit - widthMax)
+        if (this.left*(-1) > widthMaxCanvas) {
+          this.left = (-1)*widthMaxCanvas
+        }
+
         ctx.font = '11px Verdana'
 
-        for (let day = 1; day <= maxWeeks; day++) {
+        for (let day = 1; day <= this.datesForScale.length/2; day++) {
           this.drawVerticalLine(
-            60 + day * this.widthUnit,
-            60,
+            day * this.widthUnit + this.left,
             0.2,
+            60,
             this.$refs['canvas'].height - 40 - day,
           )
         }
@@ -401,14 +445,14 @@ export default {
           if (this.datesForScale[i + 1]) {
             ctx.fillText(
               this.datesForScale[i] + ' - ' + this.datesForScale[i + 1],
-              70 + (i / 2) * this.widthUnit,
-              80,
+              30 + (i / 2) * this.widthUnit + this.left,
+              30,
             )
           } else {
             ctx.fillText(
               this.datesForScale[i],
-              70 + (i / 2) * this.widthUnit,
-              80,
+              30 + (i / 2) * this.widthUnit + this.left,
+              30,
             )
           }
         }
@@ -419,63 +463,43 @@ export default {
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
+        let widthMaxCanvas = ((this.datesForScale.length/2).toFixed(0) - maxWeeks)*this.widthUnit + (maxWeeks*this.widthUnit - widthMax)
+        if (this.left*(-1) > widthMaxCanvas) {
+          this.left = (-1)*widthMaxCanvas
+        }
+
         ctx.font = '11px Verdana'
 
-        for (let day = 1; day <= maxWeeks; day++) {
-          this.drawVerticalLine(60 + day * this.widthUnit)
+        for (let day = 1; day <= this.datesForScale.length/2; day++) {
+          this.drawVerticalLine(day * this.widthUnit + this.left)
         }
 
         for (let i = 0; i < this.datesForScale.length; i += 2) {
           if (this.datesForScale[i + 1]) {
             ctx.fillText(
               this.datesForScale[i] + ' - ' + this.datesForScale[i + 1],
-              70 + (i / 2) * this.widthUnit,
-              80,
+              30 + (i / 2) * this.widthUnit + this.left,
+              30,
             )
           } else {
             ctx.fillText(
               this.datesForScale[i],
-              70 + (i / 2) * this.widthUnit,
-              80,
+              30 + (i / 2) * this.widthUnit + this.left,
+              30,
             )
           }
         }
       }
-
-      // for (let user of calendarData) {
-      //   // this.drawBlocks(ctx, user)
-      // }
       ctx.restore()
     },
 
-    /* drawBlocks(ctx, user) {
-      let datesForUser = user.calendar[Object.keys(user.calendar)[0]].sort(
-        (a, b) => a.startAt - b.startAt,
-      )
-      // eslint-disable-next-line no-console
-      //console.log(datesForUser)
+   /* drawBlocks(user) {
+    
 
-      //let lengthScale = this.gMaxX - this.gMinX;
-      // eslint-disable-next-line no-console
-      //console.log(lengthScale)
-      // let start = 60;
-
-      for (let date of datesForUser) {
-        // eslint-disable-next-line no-console
-        //let nowDate = new Date()
-        // eslint-disable-next-line no-console
-        console.log(
-          (date.startAt / this.gMaxX) * 350 * this.datesForScale.length,
-        )
-        // ctx.fillRect(60 + (date.startAt - this.gMinX)/, this.horizontalLineY, 100,25);
-        // eslint-disable-next-line no-console
-        //console.log(this.gMaxX - date.startAt)
-
-        //let start = 350 * this.datesForScale.length * (date.startAt + (86400000 - this.gMinX)) / ( lengthScale * 86400000^2);
-        //start = ((nowDate - this.gMaxX) / (nowDate - date.startAt) ) * 350 * this.datesForScale.length * 350
-        //ctx.fillRect(60 + start , this.horizontalLineY, 1,25);
-      }
-      return ctx + user
+      
+       // eslint-disable-next-line no-console
+       //console.log(this.allDates)
+      return user
     }, */
 
     // Не задействовано
@@ -517,7 +541,6 @@ body {
 .doers .doer .img {
   width: 100%;
 }
-
 .calendar-wrap {
   box-sizing: border-box;
   width: 1000px;
@@ -530,6 +553,7 @@ body {
   width: 800px;
   height: 600px;
   background: #fff;
+  overflow: scroll;
 }
 h1 {
   font-family: 'Verdana';
