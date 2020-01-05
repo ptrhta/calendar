@@ -23,6 +23,9 @@
           ></option>
         </select>
       </div>
+      <div class="time">
+        <span>Время: {{ time }}</span>
+      </div>
     </div>
     <div class="row options">
       <pre>{{ debug }}</pre>
@@ -61,6 +64,19 @@ const TIME_IN_UNITS = {
   MONTH: S_DAY * 30,
   QUARTER: S_DAY * 92,
 }
+ const options = {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+}
+const optionsFull = {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  hour: 'numeric', 
+  minute: 'numeric', 
+  second: 'numeric',
+}
 
 const HEIGHT_OF_LABELS = 40 // Смещение сверху от края канваса до начала области с данными
 const LABEL_PADDING = 8 // отступ от подписей в шапке
@@ -83,6 +99,10 @@ export default {
     left: 0,
     canvasWidth: 800,
     restDayFinish: 0,
+    time: 0,
+    restStart: 0,
+    restFinish: 0,
+    numberOfUnits: 0,
   }),
 
   computed: {
@@ -163,10 +183,16 @@ export default {
         dragging = false;
     }, false);
 
-
     this.init(this.ctx);
     this.drawDates();
     this.drawBlocks();
+
+    canvas.addEventListener('mousemove', function(evt) {
+        let rect = canvas.getBoundingClientRect();
+        let cords = evt.clientX - rect.left - context.left
+        context.getTimeLine(cords)
+    }, false);
+
   },
 
   methods: {
@@ -281,12 +307,6 @@ export default {
     getDaysForScale() {
       this.datesForScale = []
 
-      const options = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }
-
       let dayMax = new Date()
       dayMax.setTime(dayMax - this.gMinX)
 
@@ -301,12 +321,6 @@ export default {
 
     getRangesForScale(range) {
       this.datesForScale = []
-
-      const options = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }
 
       let dayMax = new Date()
       dayMax.setTime(dayMax - this.gMinX)
@@ -452,7 +466,7 @@ export default {
       let ctx = this.ctx
       ctx.save()
 
-      let numberOfUnits = this.datesForScale.length;
+      this.numberOfUnits = this.datesForScale.length;
       let startDay = new Date()
       startDay.setTime(startDay - this.gMinX)
       let restDayStart = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + 1)
@@ -464,15 +478,15 @@ export default {
 
       if (this.selected === "DAY") {
         restDayFinish = new Date(finishDay.getFullYear(), finishDay.getMonth(), finishDay.getDate())
-        numberOfUnits = this.datesForScale.length
+        this.numberOfUnits = this.datesForScale.length
       } else if (this.selected === "WEEK" || this.selected === "MONTH" || this.selected === "QUARTER") {
         restDayFinish = new Date(this.restDayFinish)
-        numberOfUnits = (this.datesForScale.length / 2).toFixed(0) - 1
+        this.numberOfUnits = (this.datesForScale.length / 2).toFixed(0) - 1
       }
 
-      let restStart = restDayStart - startDay
+      this.restStart = restDayStart - startDay
 
-      let restFinish = finishDay - restDayFinish
+      this.restFinish = finishDay - restDayFinish
 
       this.allDates.sort((a, b) => a.doerId - b.doerId)
 
@@ -483,14 +497,37 @@ export default {
           padding+=ROW_HEIGHT
         }
 
-      let startBlock = numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + restStart + restFinish) * ( this.allDates[i].startAt - this.gMinX + restStart)
+      let startBlock = this.numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * ( this.allDates[i].startAt - this.gMinX + this.restStart)
 
-      let finishBlock = numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + restStart + restFinish) * ( this.allDates[i].finishAt - this.gMinX + restStart)
+      let finishBlock = this.numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * ( this.allDates[i].finishAt - this.gMinX + this.restStart)
 
-        ctx.fillRect(startBlock + this.left,padding,finishBlock - startBlock,24);
+        ctx.fillRect(startBlock + this.left, padding, finishBlock - startBlock, 24);
       }
        ctx.restore()
-    }, 
+    },
+
+    getTimeLine(cords) {
+      let ctx = this.ctx
+
+      this.init(ctx)
+      this.drawDates()
+      this.drawBlocks()
+
+      let ms = (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * cords / (this.numberOfUnits*this.widthUnit) - this.restStart + this.gMinX
+
+      this.drawVerticalLine(
+            cords + this.left,
+            .4,
+            'blue',
+            HEIGHT_OF_LABELS,
+            this.$refs['canvas'].height,
+            )
+
+      let time = new Date()
+       time.setTime(time - ms)
+
+      this.time = time.toLocaleString('ru', optionsFull)
+    },
 
     // Не задействовано
     // Рисует аватар пользователя
@@ -558,5 +595,10 @@ span {
 }
 .options {
   padding: 0.5rem 0 0;
+}
+.row .time {
+  margin-left: 32rem;
+  padding-top: 2px;
+
 }
 </style>
