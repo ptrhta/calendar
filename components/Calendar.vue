@@ -81,6 +81,8 @@ export default {
     datesForScale: [],
     widthUnit: 0,
     left: 0,
+    canvasWidth: 800,
+    restDayFinish: 0,
   }),
 
   computed: {
@@ -116,6 +118,7 @@ export default {
       this.left = 0;
       this.init(this.ctx)
       this.drawDates()
+      this.drawBlocks()
     },
   },
 
@@ -151,6 +154,7 @@ export default {
               context.left = 0;
             }
             context.drawDates()
+            context.drawBlocks()
         }
         e.preventDefault();
     }, false);
@@ -159,8 +163,10 @@ export default {
         dragging = false;
     }, false);
 
-    this.init(this.ctx)
-    this.drawDates()
+
+    this.init(this.ctx);
+    this.drawDates();
+    this.drawBlocks();
   },
 
   methods: {
@@ -259,13 +265,16 @@ export default {
       this.gMinX = this.allDates[0].startAt
 
       // Для проверки
-     /* for (let date of this.allDates) {
+      for (let date of this.allDates) {
         let dayMax = new Date()
-        dayMax.setTime(dayMax - date.startAt)
+        dayMax.setTime(dayMax - date.finishAt)
+
+        let dayStart = new Date()
+        dayStart.setTime(dayStart - date.startAt)
 
         // eslint-disable-next-line no-console
-        console.log(dayMax.toLocaleString())
-      } */
+        console.log(dayStart.toLocaleString(), dayMax.toLocaleString() )
+      } 
       this.getDaysForScale();
     },
 
@@ -288,11 +297,9 @@ export default {
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
         dayMax = new Date(dayMax - 86400000)
       }
-      // eslint-disable-next-line no-console
-       // console.log(this.datesForScale)
     },
 
-    getWeeksForScale() {
+    getRangesForScale(range) {
       this.datesForScale = []
 
       const options = {
@@ -310,64 +317,12 @@ export default {
       this.datesForScale.push(dayMax.toLocaleString('ru', options))
 
       while (dayMax >= dayMin) {
-        dayMax = new Date(dayMax - 604800000)
+        dayMax = new Date(dayMax - range)
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
         dayMax = new Date(dayMax - 86400000)
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
       }
-      // eslint-disable-next-line no-console
-       // console.log(this.datesForScale)
-
-    },
-
-    getMonthesForScale() {
-      this.datesForScale = []
-
-      const options = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }
-
-      let dayMax = new Date()
-      dayMax.setTime(dayMax - this.gMinX)
-
-      let dayMin = new Date()
-      dayMin.setTime(dayMin - this.gMaxX)
-
-      this.datesForScale.push(dayMax.toLocaleString('ru', options))
-
-      while (dayMax >= dayMin) {
-        dayMax = new Date(dayMax - 2628000000)
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
-        dayMax = new Date(dayMax - 86400000)
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
-      }
-    },
-
-    getThreeMonthesForScale() {
-      this.datesForScale = []
-
-      const options = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }
-
-      let dayMax = new Date()
-      dayMax.setTime(dayMax - this.gMinX)
-
-      let dayMin = new Date()
-      dayMin.setTime(dayMin - this.gMaxX)
-
-      this.datesForScale.push(dayMax.toLocaleString('ru', options))
-
-      while (dayMax >= dayMin) {
-        dayMax = new Date(dayMax - 3 * 2628000000)
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
-        dayMax = new Date(dayMax - 86400000)
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
-      }
+      this.restDayFinish = dayMax
     },
 
     drawDates() {
@@ -416,10 +371,10 @@ export default {
         this.selected === 'MONTH'
       ) {
         if (this.selected === 'WEEK') {
-          this.getWeeksForScale()
+          this.getRangesForScale(604800000)
           this.widthUnit = UNITS_IN_PX.WEEK
         } else { 
-            this.getMonthesForScale()
+            this.getRangesForScale(2628000000)
             this.widthUnit = UNITS_IN_PX.MONTH
         }
 
@@ -458,7 +413,7 @@ export default {
         }
       }
       if (this.selected === 'QUARTER') {
-        this.getThreeMonthesForScale()
+        this.getRangesForScale(3 * 2628000000)
         this.widthUnit = UNITS_IN_PX.QUARTER
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
@@ -493,14 +448,49 @@ export default {
       ctx.restore()
     },
 
-   /* drawBlocks(user) {
-    
+    drawBlocks() {
+      let ctx = this.ctx
+      ctx.save()
 
-      
-       // eslint-disable-next-line no-console
-       //console.log(this.allDates)
-      return user
-    }, */
+      let numberOfUnits = this.datesForScale.length;
+      let startDay = new Date()
+      startDay.setTime(startDay - this.gMinX)
+      let restDayStart = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + 1)
+
+      let finishDay = new Date()
+      finishDay.setTime(finishDay - this.gMaxX)
+
+      let restDayFinish;
+
+      if (this.selected === "DAY") {
+        restDayFinish = new Date(finishDay.getFullYear(), finishDay.getMonth(), finishDay.getDate())
+        numberOfUnits = this.datesForScale.length
+      } else if (this.selected === "WEEK" || this.selected === "MONTH" || this.selected === "QUARTER") {
+        restDayFinish = new Date(this.restDayFinish)
+        numberOfUnits = (this.datesForScale.length / 2).toFixed(0) - 1
+      }
+
+      let restStart = restDayStart - startDay
+
+      let restFinish = finishDay - restDayFinish
+
+      this.allDates.sort((a, b) => a.doerId - b.doerId)
+
+      let padding = HEIGHT_OF_LABELS + LABEL_PADDING;
+
+      for (let i=0; i<this.allDates.length; i++) {
+        if (this.allDates[i-1]&&this.allDates[i].doerId != this.allDates[i-1].doerId) {
+          padding+=ROW_HEIGHT
+        }
+
+      let startBlock = numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + restStart + restFinish) * ( this.allDates[i].startAt - this.gMinX + restStart)
+
+      let finishBlock = numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + restStart + restFinish) * ( this.allDates[i].finishAt - this.gMinX + restStart)
+
+        ctx.fillRect(startBlock + this.left,padding,finishBlock - startBlock,24);
+      }
+       ctx.restore()
+    }, 
 
     // Не задействовано
     // Рисует аватар пользователя
@@ -554,6 +544,7 @@ body {
   height: 600px;
   background: #fff;
   overflow: scroll;
+  overflow-y: hidden;
 }
 h1 {
   font-family: 'Verdana';
