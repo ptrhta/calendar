@@ -139,6 +139,7 @@ export default {
       this.init(this.ctx)
       this.drawDates()
       this.drawBlocks()
+      this.drawScroll()
     },
   },
 
@@ -164,17 +165,28 @@ export default {
     }, false);
 
     window.addEventListener('mousemove', function(e) {
-        var evt = e || event;
+        let rect = canvas.getBoundingClientRect();
+        let evt = e || event;
         if (dragging) {
+            let heightScrollY = rect.height - 15
+            let cordsY = evt.clientY - rect.top
             let delta = evt.clientX - lastX;
             lastX = evt.clientX;
             context.left += delta;
+
+            if ( cordsY <= rect.height + 50 && cordsY >= heightScrollY - 50) {
+              context.init(context.ctx)
+              context.left += -7*delta;
+              context.drawScroll()
+            }
+
             context.init(context.ctx)
             if (context.left >= 0) {
               context.left = 0;
             }
             context.drawDates()
             context.drawBlocks()
+            context.drawScroll()
         }
         e.preventDefault();
     }, false);
@@ -186,6 +198,7 @@ export default {
     this.init(this.ctx);
     this.drawDates();
     this.drawBlocks();
+    this.drawScroll();
 
     canvas.addEventListener('mousemove', function(evt) {
         let rect = canvas.getBoundingClientRect();
@@ -209,7 +222,6 @@ export default {
      
       // this.userY = 0
       this.widthUnit = 0
-
 
       this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'blue')
 
@@ -406,7 +418,7 @@ export default {
             day * this.widthUnit + this.left,
             0.2,
             60,
-            this.$refs['canvas'].height - 40 - day,
+            this.$refs['canvas'].height - 15 - day,
           )
         }
 
@@ -512,6 +524,7 @@ export default {
       this.init(ctx)
       this.drawDates()
       this.drawBlocks()
+      this.drawScroll()
 
       let ms = (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * cords / (this.numberOfUnits*this.widthUnit) - this.restStart + this.gMinX
 
@@ -520,13 +533,37 @@ export default {
             .4,
             'blue',
             HEIGHT_OF_LABELS,
-            this.$refs['canvas'].height,
+            this.$refs['canvas'].height - 15,
             )
 
       let time = new Date()
        time.setTime(time - ms)
 
       this.time = time.toLocaleString('ru', optionsFull)
+    },
+
+    drawScroll() {
+      let ctx = this.ctx
+      ctx.save()
+      let startScroll = 0 
+
+      this.drawHorizontalLine(this.$refs['canvas'].height - 15, .4, 'blue',)
+
+      ctx.fillStyle = "#f5f7f7"
+      ctx.fillRect(0, this.$refs['canvas'].height - 15, this.$refs['canvas'].width, 15);
+
+      let numberOfUnits = this.numberOfUnits
+
+      if (this.selected === "WEEK" || this.selected === "MONTH" || this.selected === "QUARTER") {
+        numberOfUnits = this.numberOfUnits + 1
+      }
+
+      let widthScroll = this.$refs['canvas'].width / (numberOfUnits*this.widthUnit) * this.$refs['canvas'].width 
+      startScroll =  - this.left * this.$refs['canvas'].width / (numberOfUnits*this.widthUnit)
+      ctx.fillStyle = "#696969"
+      ctx.fillRect(startScroll, this.$refs['canvas'].height - 15, widthScroll, 15);
+
+      ctx.restore()
     },
 
     // Не задействовано
