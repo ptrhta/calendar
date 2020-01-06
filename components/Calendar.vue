@@ -176,7 +176,7 @@ export default {
 
             if ( cordsY <= rect.height + 50 && cordsY >= heightScrollY - 50) {
               context.init(context.ctx)
-              for (let i = 0; i <= context.numberOfUnits / 2 + 1; i++) {
+              for (let i = 0; i <= context.numberOfUnits / 4 + 4; i++) {
                 context.left += -1*delta;
                 context.drawScroll()
               }
