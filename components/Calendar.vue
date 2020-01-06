@@ -176,8 +176,10 @@ export default {
 
             if ( cordsY <= rect.height + 50 && cordsY >= heightScrollY - 50) {
               context.init(context.ctx)
-              context.left += -7*delta;
-              context.drawScroll()
+              for (let i = 0; i <= context.numberOfUnits / 2 + 1; i++) {
+                context.left += -1*delta;
+                context.drawScroll()
+              }
             }
 
             context.init(context.ctx)
@@ -418,7 +420,7 @@ export default {
             day * this.widthUnit + this.left,
             0.2,
             60,
-            this.$refs['canvas'].height - 15 - day,
+            this.$refs['canvas'].height - 10 - day,
           )
         }
 
@@ -533,7 +535,7 @@ export default {
             .4,
             'blue',
             HEIGHT_OF_LABELS,
-            this.$refs['canvas'].height - 15,
+            this.$refs['canvas'].height - 10,
             )
 
       let time = new Date()
@@ -547,10 +549,10 @@ export default {
       ctx.save()
       let startScroll = 0 
 
-      this.drawHorizontalLine(this.$refs['canvas'].height - 15, .4, 'blue',)
+      this.drawHorizontalLine(this.$refs['canvas'].height - 10, .4, 'blue',)
 
       ctx.fillStyle = "#f5f7f7"
-      ctx.fillRect(0, this.$refs['canvas'].height - 15, this.$refs['canvas'].width, 15);
+      ctx.fillRect(0, this.$refs['canvas'].height - 10, this.$refs['canvas'].width, 10);
 
       let numberOfUnits = this.numberOfUnits
 
@@ -561,7 +563,7 @@ export default {
       let widthScroll = this.$refs['canvas'].width / (numberOfUnits*this.widthUnit) * this.$refs['canvas'].width 
       startScroll =  - this.left * this.$refs['canvas'].width / (numberOfUnits*this.widthUnit)
       ctx.fillStyle = "#696969"
-      ctx.fillRect(startScroll, this.$refs['canvas'].height - 15, widthScroll, 15);
+      ctx.fillRect(startScroll, this.$refs['canvas'].height - 10, widthScroll, 10);
 
       ctx.restore()
     },
