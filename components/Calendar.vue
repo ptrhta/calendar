@@ -103,6 +103,7 @@ export default {
     restStart: 0,
     restFinish: 0,
     numberOfUnits: 0,
+    range: 0
   }),
 
   computed: {
@@ -119,15 +120,27 @@ export default {
 
     debug() {
       let minX = new Date()
-      minX.setTime(this.minX * 1000)
+      minX.setTime(this.minX)
       let maxX = new Date()
-      maxX.setTime(this.maxX * 1000)
+      maxX.setTime(this.maxX)
+
+      let dates = []
+           // Для проверки
+     for (let date of this.allDates) {
+        let dayMax = new Date()
+        dayMax.setTime(date.finishAt)
+
+        let dayStart = new Date()
+        dayStart.setTime(date.startAt)
+        dates.push([dayStart.toLocaleString(),dayMax.toLocaleString()])
+      } 
       return {
         minX,
         maxX,
         gMinX: this.gMinX,
         gMaxX: this.gMaxX,
         doersLength: Object.values(this.doers).length,
+        dates
       }
     },
   },
@@ -208,6 +221,18 @@ export default {
         context.getTimeLine(cords)
     }, false);
 
+     // Для проверки
+    for (let date of this.allDates) {
+        let dayMax = new Date()
+        dayMax.setTime(date.finishAt)
+
+        let dayStart = new Date()
+        dayStart.setTime(date.startAt)
+
+        // eslint-disable-next-line no-console
+      //  console.log(dayStart.toLocaleString(), dayMax.toLocaleString(), date.doerId )
+      } 
+
   },
 
   methods: {
@@ -225,7 +250,7 @@ export default {
       // this.userY = 0
       this.widthUnit = 0
 
-      this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'blue')
+      this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'rgba(71, 60, 59, 1)')
 
       for (let i = 0; i < Object.values(this.doers).length; i++) {
         this.drawHorizontalLine(
@@ -241,10 +266,10 @@ export default {
           let doerBlocks = calendarData.calendar[doerId]
           if (Array.isArray(doerBlocks) && doerBlocks.length > 0) {
             doerBlocks.forEach(block => {
-              if (!gMinX) gMinX = block.startAt
-              if (!gMaxX) gMaxX = block.finishAt
-              if (gMinX > block.startAt) gMinX = block.startAt
-              if (gMaxX < block.finishAt) gMaxX = block.finishAt
+              if (!gMinX) gMinX = block.finishAt
+              if (!gMaxX) gMaxX = block.startAt
+              if (gMinX > block.finishAt) gMinX = block.finishAt
+              if (gMaxX < block.startAt) gMaxX = block.startAt
               block.doerId = doerId
               allDates.push(block)
             })
@@ -260,6 +285,8 @@ export default {
               TIME_IN_UNITS[this.selected],
         )
       }
+       // eslint-disable-next-line no-console
+      // console.log(this.gMinX, this.gMaxX )
       this.sortDate()  
     },
 
@@ -300,48 +327,41 @@ export default {
     sortDate() {
       this.allDates.sort((a, b) => a.finishAt - b.finishAt)
       this.gMaxX = this.allDates[this.allDates.length - 1].finishAt
+      this.maxX = this.allDates[this.allDates.length - 1].startAt
 
       this.allDates.sort((a, b) => a.startAt - b.startAt)
       this.gMinX = this.allDates[0].startAt
 
-      // Для проверки
-      for (let date of this.allDates) {
-        let dayMax = new Date()
-        dayMax.setTime(dayMax - date.finishAt)
-
-        let dayStart = new Date()
-        dayStart.setTime(dayStart - date.startAt)
-
-        // eslint-disable-next-line no-console
-        console.log(dayStart.toLocaleString(), dayMax.toLocaleString() )
-      } 
       this.getDaysForScale();
     },
 
     getDaysForScale() {
       this.datesForScale = []
 
-      let dayMax = new Date()
-      dayMax.setTime(dayMax - this.gMinX)
-
       let dayMin = new Date()
-      dayMin.setTime(dayMin - this.gMaxX)
+      dayMin.setTime(this.gMinX)
 
-      while (dayMax >= dayMin) {
+      let dayMax = new Date()
+      dayMax.setTime(this.gMaxX)
+
+      while (dayMax >= this.allDates[0].startAt || dayMax >= dayMin) {
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
         dayMax = new Date(dayMax - 86400000)
       }
+      // eslint-disable-next-line no-console
+       // console.log(dayMax.toLocaleString(), this.allDates, this.datesForScale, dayMin.toLocaleString() )
     },
 
     getRangesForScale(range) {
       this.datesForScale = []
 
+      let date = new Date(this.gMinX)
+      let dayMin = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+
       let dayMax = new Date()
-      dayMax.setTime(dayMax - this.gMinX)
-
-      let dayMin = new Date()
-      dayMin.setTime(dayMin - this.gMaxX)
-
+      dayMax.setTime(this.gMaxX)
+      
       this.datesForScale.push(dayMax.toLocaleString('ru', options))
 
       while (dayMax >= dayMin) {
@@ -351,6 +371,8 @@ export default {
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
       }
       this.restDayFinish = dayMax
+      // eslint-disable-next-line no-console
+       console.log(dayMax.toLocaleString(), this.datesForScale, dayMin.toLocaleString(), this.restDayFinish )
     },
 
     drawDates() {
@@ -367,6 +389,7 @@ export default {
       let widthMax = this.$refs['canvas'].width
 
       if (this.selected === 'DAY') {
+        this.range = 86400000
         this.getDaysForScale()
         this.widthUnit = UNITS_IN_PX.DAY
 
@@ -399,11 +422,13 @@ export default {
         this.selected === 'MONTH'
       ) {
         if (this.selected === 'WEEK') {
-          this.getRangesForScale(604800000)
+          this.getRangesForScale(518400000)
+          this.range = 604800000  
           this.widthUnit = UNITS_IN_PX.WEEK
         } else { 
             this.getRangesForScale(2628000000)
             this.widthUnit = UNITS_IN_PX.MONTH
+            this.range = 2628000000 + 86400000
         }
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
@@ -442,6 +467,7 @@ export default {
       }
       if (this.selected === 'QUARTER') {
         this.getRangesForScale(3 * 2628000000)
+        this.range = 3 * 2628000000 + 86400000
         this.widthUnit = UNITS_IN_PX.QUARTER
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
@@ -482,11 +508,11 @@ export default {
 
       this.numberOfUnits = this.datesForScale.length;
       let startDay = new Date()
-      startDay.setTime(startDay - this.gMinX)
-      let restDayStart = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + 1)
+      startDay.setTime(this.gMaxX)
+      let restDayStart = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() +1)
 
       let finishDay = new Date()
-      finishDay.setTime(finishDay - this.gMaxX)
+      finishDay.setTime(this.gMinX)
 
       let restDayFinish;
 
@@ -499,7 +525,6 @@ export default {
       }
 
       this.restStart = restDayStart - startDay
-
       this.restFinish = finishDay - restDayFinish
 
       this.allDates.sort((a, b) => a.doerId - b.doerId)
@@ -511,13 +536,17 @@ export default {
           padding+=ROW_HEIGHT
         }
 
-      let startBlock = this.numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * ( this.allDates[i].startAt - this.gMinX + this.restStart)
+        let startCords = this.widthUnit / (this.range) * (restDayStart - this.allDates[i].startAt)
+        let startBlock = startCords - startCords % (this.widthUnit * 86400000 / this.range) + this.widthUnit * 86400000 / this.range - (startCords % (this.widthUnit * 86400000 / this.range))
 
-      let finishBlock = this.numberOfUnits*this.widthUnit / (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * ( this.allDates[i].finishAt - this.gMinX + this.restStart)
+        let finishCords = this.widthUnit / (this.range) * (restDayStart  - this.allDates[i].finishAt)
+        let finishBlock = finishCords - finishCords % (this.widthUnit * 86400000 / this.range) + this.widthUnit * 86400000 / this.range - (finishCords % (this.widthUnit * 86400000 / this.range))
 
+        ctx.fillStyle = "rgba(55, 61, 51, 1)";
         ctx.fillRect(startBlock + this.left, padding, finishBlock - startBlock, 24);
       }
        ctx.restore()
+       
     },
 
     getTimeLine(cords) {
@@ -528,20 +557,25 @@ export default {
       this.drawBlocks()
       this.drawScroll()
 
-      let ms = (this.gMaxX - this.gMinX + this.restStart + this.restFinish) * cords / (this.numberOfUnits*this.widthUnit) - this.restStart + this.gMinX
+      let ms = this.gMaxX - this.range * cords / (this.widthUnit) + this.restStart
 
       this.drawVerticalLine(
             cords + this.left,
-            .4,
-            'blue',
+            0.9,
+            "rgba(242, 128, 134, 1)",
             HEIGHT_OF_LABELS,
             this.$refs['canvas'].height - 10,
             )
 
       let time = new Date()
-       time.setTime(time - ms)
-
-      this.time = time.toLocaleString('ru', optionsFull)
+      time.setTime(ms)
+      let timeNow
+      if (time.getHours() == "0" && time.getMinutes() == "00") {
+         timeNow = new Date(time.getFullYear(), time.getMonth(), time.getDate() - 1, time.getHours(), time.getMinutes())
+      } else
+         timeNow = new Date(time.getFullYear(), time.getMonth(), time.getDate() + 1, - time.getHours(), - time.getMinutes())
+      
+      this.time = timeNow.toLocaleString('ru', optionsFull)
     },
 
     drawScroll() {

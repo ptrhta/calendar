@@ -4,201 +4,40 @@
       {
         "id": 0,
         "rate": 2,
-        "startAt": 1575187200,
-        "finishAt": 1575219600,
+        "startAt": 1582108491000,
+        "finishAt": 1582137291000,
         "comment": null
       },
       {
         "id": 1,
-        "rate": 1,
-        "startAt": 1575273600,
-        "finishAt": 1575306000,
+        "rate": 2,
+        "startAt": 1581845691000,
+        "finishAt": 1581870891000,
         "comment": null
       },
       {
         "id": 2,
         "rate": 2,
-        "startAt": 1575360000,
-        "finishAt": 1575392400,
-        "comment": null
-      },
-      {
-        "id": 3,
-        "rate": 2,
-        "startAt": 1575446400,
-        "finishAt": 1575478800,
-        "comment": null
-      },
-      {
-        "id": 4,
-        "rate": 2,
-        "startAt": 1585532800,
-        "finishAt": 1585565200,
-        "comment": null
-      },
-      {
-        "id": 5,
-        "rate": 1,
-        "startAt": 1575619200,
-        "finishAt": 1575651600,
-        "comment": null
-      },
-      {
-        "id": 7,
-        "rate": 2,
-        "startAt": 1575792000,
-        "finishAt": 1575824400,
-        "comment": null
-      },
-      {
-        "id": 8,
-        "rate": 1,
-        "startAt": 1575878400,
-        "finishAt": 1575910800,
-        "comment": null
-      },
-      {
-        "id": 9,
-        "rate": 1,
-        "startAt": 1575964800,
-        "finishAt": 1575997200,
-        "comment": null
-      },
-      {
-        "id": 10,
-        "rate": 1,
-        "startAt": 1576051200,
-        "finishAt": 1576083600,
-        "comment": null
-      },
-      {
-        "id": 12,
-        "rate": 1,
-        "startAt": 1576224000,
-        "finishAt": 1576256400,
-        "comment": null
-      },
-      {
-        "id": 13,
-        "rate": 1,
-        "startAt": 1576310400,
-        "finishAt": 1576342800,
-        "comment": null
-      },
-      {
-        "id": 14,
-        "rate": 1,
-        "startAt": 1576396800,
-        "finishAt": 1576429200,
+        "startAt": 1581267600000,
+        "finishAt": 1581278400000,
         "comment": null
       }
     ],
     "517": [
       {
-          "id": 0,
-          "rate": 2,
-          "startAt": 1575187200,
-          "finishAt": 1575219600,
-          "comment": null
-        },
-        {
-          "id": 1,
-          "rate": 1,
-          "startAt": 1785573600,
-          "finishAt": 1785606000,
-          "comment": null
-        },
-        {
-          "id": 2,
-          "rate": 2,
-          "startAt": 1675360000,
-          "finishAt": 1675392400,
-          "comment": null
-        },
-        {
-          "id": 3,
-          "rate": 2,
-          "startAt": 1575446400,
-          "finishAt": 1575478800,
-          "comment": null
-        },
-        {
-          "id": 4,
-          "rate": 2,
-          "startAt": 1575532800,
-          "finishAt": 1575565200,
-          "comment": null
-        },
-        {
-          "id": 5,
-          "rate": 1,
-          "startAt": 1575619200,
-          "finishAt": 1575651600,
-          "comment": null
-        },
-        {
-          "id": 7,
-          "rate": 2,
-          "startAt": 1575792000,
-          "finishAt": 1575824400,
-          "comment": null
-        },
-        {
-          "id": 8,
-          "rate": 1,
-          "startAt": 1575878400,
-          "finishAt": 1575910800,
-          "comment": null
-        },
-        {
-          "id": 9,
-          "rate": 1,
-          "startAt": 1575964800,
-          "finishAt": 1575997200,
-          "comment": null
-        },
-        {
-          "id": 10,
-          "rate": 1,
-          "startAt": 1576051200,
-          "finishAt": 1576083600,
-          "comment": null
-        },
-        {
-          "id": 12,
-          "rate": 1,
-          "startAt": 1576224000,
-          "finishAt": 1576256400,
-          "comment": null
-        },
-        {
-          "id": 13,
-          "rate": 1,
-          "startAt": 1586310400,
-          "finishAt": 1586342800,
-          "comment": null
-        },
-        {
-          "id": 14,
-          "rate": 1,
-          "startAt": 1576396800,
-          "finishAt": 1576429200,
-          "comment": null
-        },
-        {
-          "id": 15,
-          "rate": 2,
-          "startAt": 1976483200,
-          "finishAt": 1976515600,
-          "comment": null
-        },
-        {
-          "id": 16,
-          "rate": 2,
-          "startAt": 576569600,
-          "finishAt": 576602000,
-          "comment": null
-        }
+        "id": 0,
+        "rate": 2,
+        "startAt": 1582011651000,
+        "finishAt": 1582029651000,
+        "comment": null
+      },
+      {
+        "id": 1,
+        "rate": 2,
+        "startAt": 1581922800000,
+        "finishAt": 1581948000000,
+        "comment": null
+      }
     ]
   },
   "doers": {
@@ -248,3 +87,4 @@
     }
   }
 }
+ 
