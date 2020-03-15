@@ -64,7 +64,7 @@ const TIME_IN_UNITS = {
   MONTH: S_DAY * 30,
   QUARTER: S_DAY * 92,
 }
- const options = {
+const options = {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
@@ -73,8 +73,8 @@ const optionsFull = {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
-  hour: 'numeric', 
-  minute: 'numeric', 
+  hour: 'numeric',
+  minute: 'numeric',
   second: 'numeric',
 }
 
@@ -103,7 +103,7 @@ export default {
     restStart: 0,
     restFinish: 0,
     numberOfUnits: 0,
-    range: 0
+    range: 0,
   }),
 
   computed: {
@@ -125,22 +125,22 @@ export default {
       maxX.setTime(this.maxX)
 
       let dates = []
-           // Для проверки
-     for (let date of this.allDates) {
+      // Для проверки
+      for (let date of this.allDates) {
         let dayMax = new Date()
         dayMax.setTime(date.finishAt)
 
         let dayStart = new Date()
         dayStart.setTime(date.startAt)
-        dates.push([dayStart.toLocaleString(),dayMax.toLocaleString()])
-      } 
+        dates.push([dayStart.toLocaleString(), dayMax.toLocaleString()])
+      }
       return {
         minX,
         maxX,
         gMinX: this.gMinX,
         gMaxX: this.gMaxX,
         doersLength: Object.values(this.doers).length,
-        dates
+        dates,
       }
     },
   },
@@ -148,8 +148,8 @@ export default {
   watch: {
     // эта функция запускается при любом изменении вопроса
     selected: function() {
-      this.left = 0;
       this.init(this.ctx)
+      this.getNumberOfUnits()
       this.drawDates()
       this.drawBlocks()
       this.drawScroll()
@@ -165,74 +165,106 @@ export default {
     // Сохранить в this.ctx 2d context canvas'а
     this.ctx = canvas.getContext('2d')
 
-    let dragging = false;
-    let lastX;
+    let dragging = false
+    let lastX
 
     let context = this
 
-    canvas.addEventListener('mousedown', function(e) {
-        var evt = e || event;
-        dragging = true;
-        lastX = evt.clientX;
-        e.preventDefault();
-    }, false);
+    this.widthUnit = UNITS_IN_PX.DAY
 
-    window.addEventListener('mousemove', function(e) {
-        let rect = canvas.getBoundingClientRect();
-        let evt = e || event;
+    this.init(this.ctx)
+    this.getNumberOfUnits()
+
+    // eslint-disable-next-line no-console
+    console.log(
+      this.left,
+      this.numberOfUnits,
+      this.widthUnit,
+      UNITS_IN_PX.DAY,
+      this.selected,
+    )
+
+    this.drawDates()
+    this.drawBlocks()
+    this.drawScroll()
+
+    canvas.addEventListener(
+      'mousedown',
+      function(e) {
+        var evt = e || event
+        dragging = true
+        lastX = evt.clientX
+        e.preventDefault()
+      },
+      false,
+    )
+
+    window.addEventListener(
+      'mousemove',
+      function(e) {
+        let rect = canvas.getBoundingClientRect()
+        let evt = e || event
+
         if (dragging) {
-            let heightScrollY = rect.height - 15
-            let cordsY = evt.clientY - rect.top
-            let delta = evt.clientX - lastX;
-            lastX = evt.clientX;
-            context.left += delta;
+          let heightScrollY = rect.height - 15
+          let cordsY = evt.clientY - rect.top
+          let delta = evt.clientX - lastX
+          lastX = evt.clientX
+          context.left += delta
 
-            if ( cordsY <= rect.height + 50 && cordsY >= heightScrollY - 50) {
-              context.init(context.ctx)
-              for (let i = 0; i <= context.numberOfUnits / 4 + 4; i++) {
-                context.left += -1*delta;
-                context.drawScroll()
-              }
-            }
+          // eslint-disable-next-line no-console
+          console.log(context.left, delta, evt.clientX, lastX)
 
+          if (cordsY <= rect.height + 50 && cordsY >= heightScrollY - 50) {
             context.init(context.ctx)
-            if (context.left >= 0) {
-              context.left = 0;
+            for (let i = 0; i <= context.numberOfUnits / 4 + 4; i++) {
+              context.left += -1 * delta
+              context.drawScroll()
             }
-            context.drawDates()
-            context.drawBlocks()
-            context.drawScroll()
+          }
+
+          context.init(context.ctx)
+          if (context.left >= 0) {
+            context.left = 0
+          }
+          context.drawDates()
+          context.drawBlocks()
+          context.drawScroll()
         }
-        e.preventDefault();
-    }, false);
+        e.preventDefault()
+      },
+      false,
+    )
 
-    window.addEventListener('mouseup', function() {
-        dragging = false;
-    }, false);
+    window.addEventListener(
+      'mouseup',
+      function() {
+        dragging = false
+      },
+      false,
+    )
 
-    this.init(this.ctx);
-    this.drawDates();
-    this.drawBlocks();
-    this.drawScroll();
-
-    canvas.addEventListener('mousemove', function(evt) {
-        let rect = canvas.getBoundingClientRect();
+    canvas.addEventListener(
+      'mousemove',
+      function(evt) {
+        let rect = canvas.getBoundingClientRect()
         let cords = evt.clientX - rect.left - context.left
         context.getTimeLine(cords)
-    }, false);
+      },
+      false,
+    )
 
-     // Для проверки
+    // Для проверки
     for (let date of this.allDates) {
-        let dayMax = new Date()
-        dayMax.setTime(date.finishAt)
+      let dayMax = new Date()
+      dayMax.setTime(date.finishAt)
 
-        let dayStart = new Date()
-        dayStart.setTime(date.startAt)
+      let dayStart = new Date()
+      dayStart.setTime(date.startAt)
 
-        // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console
       //  console.log(dayStart.toLocaleString(), dayMax.toLocaleString(), date.doerId )
-      } 
-
+    }
   },
 
   methods: {
@@ -246,9 +278,9 @@ export default {
         this.$refs['canvas'].width,
         this.$refs['canvas'].height,
       )
-     
+
       // this.userY = 0
-      this.widthUnit = 0
+      //this.widthUnit = 0
 
       this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'rgba(71, 60, 59, 1)')
 
@@ -285,9 +317,10 @@ export default {
               TIME_IN_UNITS[this.selected],
         )
       }
-       // eslint-disable-next-line no-console
+
+      // eslint-disable-next-line no-console
       // console.log(this.gMinX, this.gMaxX )
-      this.sortDate()  
+      this.sortDate()
     },
 
     drawVerticalLine(
@@ -311,7 +344,7 @@ export default {
     drawHorizontalLine(
       offset,
       width = DEFAULT_LINE_WIDTH,
-      color = DEFAULT_STROKE_COLOR, 
+      color = DEFAULT_STROKE_COLOR,
     ) {
       let ctx = this.ctx
       ctx.save()
@@ -332,7 +365,7 @@ export default {
       this.allDates.sort((a, b) => a.startAt - b.startAt)
       this.gMinX = this.allDates[0].startAt
 
-      this.getDaysForScale();
+      this.getDaysForScale()
     },
 
     getDaysForScale() {
@@ -349,7 +382,12 @@ export default {
         dayMax = new Date(dayMax - 86400000)
       }
       // eslint-disable-next-line no-console
-       // console.log(dayMax.toLocaleString(), this.allDates, this.datesForScale, dayMin.toLocaleString() )
+      console.log(
+        dayMax.toLocaleString(),
+        this.allDates,
+        this.datesForScale,
+        dayMin.toLocaleString(),
+      )
     },
 
     getRangesForScale(range) {
@@ -358,21 +396,29 @@ export default {
       let date = new Date(this.gMinX)
       let dayMin = new Date(date.getFullYear(), date.getMonth(), date.getDate())
 
-
       let dayMax = new Date()
       dayMax.setTime(this.gMaxX)
-      
+
       this.datesForScale.push(dayMax.toLocaleString('ru', options))
 
       while (dayMax >= dayMin) {
         dayMax = new Date(dayMax - range)
         this.datesForScale.push(dayMax.toLocaleString('ru', options))
         dayMax = new Date(dayMax - 86400000)
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
+        if (dayMax >= dayMin) {
+          this.datesForScale.push(dayMax.toLocaleString('ru', options))
+        }
       }
+      this.getNumberOfUnits()
+
       this.restDayFinish = dayMax
       // eslint-disable-next-line no-console
-       console.log(dayMax.toLocaleString(), this.datesForScale, dayMin.toLocaleString(), this.restDayFinish )
+      console.log(
+        dayMax.toLocaleString(),
+        this.datesForScale,
+        dayMin.toLocaleString(),
+        this.restDayFinish,
+      )
     },
 
     drawDates() {
@@ -391,13 +437,19 @@ export default {
       if (this.selected === 'DAY') {
         this.range = 86400000
         this.getDaysForScale()
+
+        this.datesForScale = this.datesForScale.reverse()
+
         this.widthUnit = UNITS_IN_PX.DAY
 
         let maxDays = +(widthMax / this.widthUnit).toFixed(0)
 
-        let widthMaxCanvas = (this.datesForScale.length - maxDays)*this.widthUnit + (maxDays*this.widthUnit - widthMax)
-        if (this.left*(-1) > widthMaxCanvas) {
-          this.left = (-1)*widthMaxCanvas
+        let widthMaxCanvas =
+          (this.datesForScale.length - maxDays) * this.widthUnit +
+          (maxDays * this.widthUnit - widthMax)
+
+        if (this.left * -1 > widthMaxCanvas) {
+          this.left = -1 * widthMaxCanvas
         }
 
         ctx.font = '11px Verdana'
@@ -417,30 +469,32 @@ export default {
           i++
         }
       }
-      if (
-        this.selected === 'WEEK' ||
-        this.selected === 'MONTH'
-      ) {
+      if (this.selected === 'WEEK' || this.selected === 'MONTH') {
         if (this.selected === 'WEEK') {
           this.getRangesForScale(518400000)
-          this.range = 604800000  
+          this.datesForScale = this.datesForScale.reverse()
+          this.range = 604800000
           this.widthUnit = UNITS_IN_PX.WEEK
-        } else { 
-            this.getRangesForScale(2628000000)
-            this.widthUnit = UNITS_IN_PX.MONTH
-            this.range = 2628000000 + 86400000
+        } else {
+          this.getRangesForScale(2628000000)
+          this.datesForScale = this.datesForScale.reverse()
+          this.widthUnit = UNITS_IN_PX.MONTH
+          this.range = 2628000000 + 86400000
         }
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
-        let widthMaxCanvas = ((this.datesForScale.length/2).toFixed(0) - maxWeeks)*this.widthUnit + (maxWeeks*this.widthUnit - widthMax)
-        if (this.left*(-1) > widthMaxCanvas) {
-          this.left = (-1)*widthMaxCanvas
+        let widthMaxCanvas =
+          ((this.datesForScale.length / 2).toFixed(0) - maxWeeks) *
+            this.widthUnit +
+          (maxWeeks * this.widthUnit - widthMax)
+        if (this.left * -1 > widthMaxCanvas) {
+          this.left = -1 * widthMaxCanvas
         }
 
         ctx.font = '11px Verdana'
 
-        for (let day = 1; day <= this.datesForScale.length/2; day++) {
+        for (let day = 1; day <= this.datesForScale.length / 2; day++) {
           this.drawVerticalLine(
             day * this.widthUnit + this.left,
             0.2,
@@ -472,14 +526,17 @@ export default {
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
-        let widthMaxCanvas = ((this.datesForScale.length/2).toFixed(0) - maxWeeks)*this.widthUnit + (maxWeeks*this.widthUnit - widthMax)
-        if (this.left*(-1) > widthMaxCanvas) {
-          this.left = (-1)*widthMaxCanvas
+        let widthMaxCanvas =
+          ((this.datesForScale.length / 2).toFixed(0) - maxWeeks) *
+            this.widthUnit +
+          (maxWeeks * this.widthUnit - widthMax)
+        if (this.left * -1 > widthMaxCanvas) {
+          this.left = -1 * widthMaxCanvas
         }
 
         ctx.font = '11px Verdana'
 
-        for (let day = 1; day <= this.datesForScale.length/2; day++) {
+        for (let day = 1; day <= this.datesForScale.length / 2; day++) {
           this.drawVerticalLine(day * this.widthUnit + this.left)
         }
 
@@ -502,26 +559,60 @@ export default {
       ctx.restore()
     },
 
+    getNumberOfUnits() {
+      if (this.selected === 'DAY') {
+        this.numberOfUnits = this.datesForScale.length
+      } else if (
+        this.selected === 'WEEK' ||
+        this.selected === 'MONTH' ||
+        this.selected === 'QUARTER'
+      ) {
+        this.numberOfUnits = (this.datesForScale.length / 2).toFixed(0)
+      }
+      this.left = -this.numberOfUnits * this.widthUnit
+      // eslint-disable-next-line no-console
+      console.log(
+        this.left,
+        this.numberOfUnits,
+        this.widthUnit,
+        this.datesForScale.length,
+      )
+    },
+
     drawBlocks() {
       let ctx = this.ctx
       ctx.save()
 
-      this.numberOfUnits = this.datesForScale.length;
       let startDay = new Date()
       startDay.setTime(this.gMaxX)
-      let restDayStart = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() +1)
+      let restDayStart = new Date(
+        startDay.getFullYear(),
+        startDay.getMonth(),
+        startDay.getDate() + 1,
+      )
 
       let finishDay = new Date()
       finishDay.setTime(this.gMinX)
 
-      let restDayFinish;
+      let restDayFinish
 
-      if (this.selected === "DAY") {
-        restDayFinish = new Date(finishDay.getFullYear(), finishDay.getMonth(), finishDay.getDate())
-        this.numberOfUnits = this.datesForScale.length
-      } else if (this.selected === "WEEK" || this.selected === "MONTH" || this.selected === "QUARTER") {
-        restDayFinish = new Date(this.restDayFinish)
-        this.numberOfUnits = (this.datesForScale.length / 2).toFixed(0) - 1
+      if (this.selected === 'DAY') {
+        restDayFinish = new Date(
+          finishDay.getFullYear(),
+          finishDay.getMonth(),
+          finishDay.getDate(),
+        )
+      } else if (
+        this.selected === 'WEEK' ||
+        this.selected === 'MONTH' ||
+        this.selected === 'QUARTER'
+      ) {
+        restDayFinish = new Date(
+          this.restDayFinish.getFullYear(),
+          this.restDayFinish.getMonth(),
+          this.restDayFinish.getDate() + 1,
+        )
+        // restDayFinish = new Date(this.restDayFinish)
       }
 
       this.restStart = restDayStart - startDay
@@ -529,24 +620,58 @@ export default {
 
       this.allDates.sort((a, b) => a.doerId - b.doerId)
 
-      let padding = HEIGHT_OF_LABELS + LABEL_PADDING;
+      let padding = HEIGHT_OF_LABELS + LABEL_PADDING
 
-      for (let i=0; i<this.allDates.length; i++) {
-        if (this.allDates[i-1]&&this.allDates[i].doerId != this.allDates[i-1].doerId) {
-          padding+=ROW_HEIGHT
+      // eslint-disable-next-line no-console
+      console.log(restDayFinish.toLocaleString())
+
+      for (let i = 0; i < this.allDates.length; i++) {
+        if (
+          this.allDates[i - 1] &&
+          this.allDates[i].doerId != this.allDates[i - 1].doerId
+        ) {
+          padding += ROW_HEIGHT
         }
 
-        let startCords = this.widthUnit / (this.range) * (restDayStart - this.allDates[i].startAt)
-        let startBlock = startCords - startCords % (this.widthUnit * 86400000 / this.range) + this.widthUnit * 86400000 / this.range - (startCords % (this.widthUnit * 86400000 / this.range))
+        /*let startCords =
+          (this.widthUnit / this.range) *
+          (restDayStart - this.allDates[i].startAt)
 
-        let finishCords = this.widthUnit / (this.range) * (restDayStart  - this.allDates[i].finishAt)
-        let finishBlock = finishCords - finishCords % (this.widthUnit * 86400000 / this.range) + this.widthUnit * 86400000 / this.range - (finishCords % (this.widthUnit * 86400000 / this.range))
+        let startBlock =
+          startCords -
+          (startCords % ((this.widthUnit * 86400000) / this.range)) +
+          (this.widthUnit * 86400000) / this.range -
+          (startCords % ((this.widthUnit * 86400000) / this.range))
 
-        ctx.fillStyle = "rgba(55, 61, 51, 1)";
-        ctx.fillRect(startBlock + this.left, padding, finishBlock - startBlock, 24);
+        let finishCords =
+          (this.widthUnit / this.range) *
+          (restDayStart - this.allDates[i].finishAt)
+
+        let finishBlock =
+          finishCords -
+          (finishCords % ((this.widthUnit * 86400000) / this.range)) +
+          (this.widthUnit * 86400000) / this.range -
+          (finishCords % ((this.widthUnit * 86400000) / this.range))
+
+        */
+
+        let startCords =
+          (this.widthUnit / this.range) *
+          (this.allDates[i].startAt - restDayFinish)
+
+        let finishCords =
+          (this.widthUnit / this.range) *
+          (this.allDates[i].finishAt - restDayFinish)
+
+        ctx.fillStyle = 'rgba(55, 61, 51, 1)'
+        ctx.fillRect(
+          startCords + this.left,
+          padding,
+          finishCords - startCords,
+          24,
+        )
       }
-       ctx.restore()
-       
+      ctx.restore()
     },
 
     getTimeLine(cords) {
@@ -557,47 +682,64 @@ export default {
       this.drawBlocks()
       this.drawScroll()
 
-      let ms = this.gMaxX - this.range * cords / (this.widthUnit) + this.restStart
+      let ms =
+        (this.range * cords) / this.widthUnit - this.restFinish + this.gMinX
 
       this.drawVerticalLine(
-            cords + this.left,
-            0.9,
-            "rgba(242, 128, 134, 1)",
-            HEIGHT_OF_LABELS,
-            this.$refs['canvas'].height - 10,
-            )
+        cords + this.left,
+        0.9,
+        'rgba(242, 128, 134, 1)',
+        HEIGHT_OF_LABELS,
+        this.$refs['canvas'].height - 10,
+      )
 
       let time = new Date()
       time.setTime(ms)
-      let timeNow
-      if (time.getHours() == "0" && time.getMinutes() == "00") {
-         timeNow = new Date(time.getFullYear(), time.getMonth(), time.getDate() - 1, time.getHours(), time.getMinutes())
-      } else
-         timeNow = new Date(time.getFullYear(), time.getMonth(), time.getDate() + 1, - time.getHours(), - time.getMinutes())
-      
+
+      let timeNow = new Date(
+        time.getFullYear(),
+        time.getMonth(),
+        time.getDate(),
+        time.getHours(),
+        time.getMinutes(),
+      )
+
       this.time = timeNow.toLocaleString('ru', optionsFull)
     },
 
     drawScroll() {
       let ctx = this.ctx
       ctx.save()
-      let startScroll = 0 
+      let startScroll = 0
 
-      this.drawHorizontalLine(this.$refs['canvas'].height - 10, .4, 'blue',)
+      this.drawHorizontalLine(this.$refs['canvas'].height - 10, 0.4, 'blue')
 
-      ctx.fillStyle = "#f5f7f7"
-      ctx.fillRect(0, this.$refs['canvas'].height - 10, this.$refs['canvas'].width, 10);
+      ctx.fillStyle = '#f5f7f7'
+      ctx.fillRect(
+        0,
+        this.$refs['canvas'].height - 10,
+        this.$refs['canvas'].width,
+        10,
+      )
 
       let numberOfUnits = this.numberOfUnits
 
-      if (this.selected === "WEEK" || this.selected === "MONTH" || this.selected === "QUARTER") {
-        numberOfUnits = this.numberOfUnits + 1
-      }
+      let widthScroll =
+        (this.$refs['canvas'].width / (numberOfUnits * this.widthUnit)) *
+        this.$refs['canvas'].width
+      startScroll =
+        (-this.left * this.$refs['canvas'].width) /
+        (numberOfUnits * this.widthUnit)
+      ctx.fillStyle = '#696969'
+      ctx.fillRect(
+        startScroll,
+        this.$refs['canvas'].height - 10,
+        widthScroll,
+        10,
+      )
 
-      let widthScroll = this.$refs['canvas'].width / (numberOfUnits*this.widthUnit) * this.$refs['canvas'].width 
-      startScroll =  - this.left * this.$refs['canvas'].width / (numberOfUnits*this.widthUnit)
-      ctx.fillStyle = "#696969"
-      ctx.fillRect(startScroll, this.$refs['canvas'].height - 10, widthScroll, 10);
+      // eslint-disable-next-line no-console
+      //console.log(this.left, this.numberOfUnits, this.widthUnit, numberOfUnits)
 
       ctx.restore()
     },
@@ -672,6 +814,5 @@ span {
 .row .time {
   margin-left: 32rem;
   padding-top: 2px;
-
 }
 </style>
