@@ -64,12 +64,15 @@ const TIME_IN_UNITS = {
   MONTH: S_DAY * 30,
   QUARTER: S_DAY * 92,
 }
-const options = {
+const OPTIONS = {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
 }
-const optionsFull = {
+const OPTIONS_FOR_MONTH = {
+  month: 'long',
+}
+const OPTIONS_FULL = {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
@@ -104,6 +107,8 @@ export default {
     restFinish: 0,
     numberOfUnits: 0,
     range: 0,
+    rangesForScale: [],
+    startMonthesForScale: [],
   }),
 
   computed: {
@@ -121,10 +126,12 @@ export default {
     debug() {
       let minX = new Date()
       minX.setTime(this.minX)
+
       let maxX = new Date()
       maxX.setTime(this.maxX)
 
       let dates = []
+
       // Для проверки
       for (let date of this.allDates) {
         let dayMax = new Date()
@@ -132,6 +139,7 @@ export default {
 
         let dayStart = new Date()
         dayStart.setTime(date.startAt)
+
         dates.push([dayStart.toLocaleString(), dayMax.toLocaleString()])
       }
       return {
@@ -148,11 +156,7 @@ export default {
   watch: {
     // эта функция запускается при любом изменении вопроса
     selected: function() {
-      this.init(this.ctx)
-      this.getNumberOfUnits()
-      this.drawDates()
-      this.drawBlocks()
-      this.drawScroll()
+      this.drawing()
     },
   },
 
@@ -165,28 +169,14 @@ export default {
     // Сохранить в this.ctx 2d context canvas'а
     this.ctx = canvas.getContext('2d')
 
+    this.widthUnit = UNITS_IN_PX.DAY
+
+    this.drawing()
+
     let dragging = false
     let lastX
 
-    let context = this
-
-    this.widthUnit = UNITS_IN_PX.DAY
-
-    this.init(this.ctx)
-    this.getNumberOfUnits()
-
-    // eslint-disable-next-line no-console
-    console.log(
-      this.left,
-      this.numberOfUnits,
-      this.widthUnit,
-      UNITS_IN_PX.DAY,
-      this.selected,
-    )
-
-    this.drawDates()
-    this.drawBlocks()
-    this.drawScroll()
+    let mountedThis = this
 
     canvas.addEventListener(
       'mousedown',
@@ -210,26 +200,24 @@ export default {
           let cordsY = evt.clientY - rect.top
           let delta = evt.clientX - lastX
           lastX = evt.clientX
-          context.left += delta
-
-          // eslint-disable-next-line no-console
-          console.log(context.left, delta, evt.clientX, lastX)
+          mountedThis.left += delta
 
           if (cordsY <= rect.height + 50 && cordsY >= heightScrollY - 50) {
-            context.init(context.ctx)
-            for (let i = 0; i <= context.numberOfUnits / 4 + 4; i++) {
-              context.left += -1 * delta
-              context.drawScroll()
+            mountedThis.init(mountedThis.ctx)
+            for (let i = 0; i <= mountedThis.numberOfUnits / 4 + 4; i++) {
+              mountedThis.left += -1 * delta
+              mountedThis.drawScroll()
             }
           }
 
-          context.init(context.ctx)
-          if (context.left >= 0) {
-            context.left = 0
+          mountedThis.init(mountedThis.ctx)
+          if (mountedThis.left >= 0) {
+            mountedThis.left = 0
           }
-          context.drawDates()
-          context.drawBlocks()
-          context.drawScroll()
+
+          mountedThis.drawDates()
+          mountedThis.drawBlocks()
+          mountedThis.drawScroll()
         }
         e.preventDefault()
       },
@@ -248,28 +236,24 @@ export default {
       'mousemove',
       function(evt) {
         let rect = canvas.getBoundingClientRect()
-        let cords = evt.clientX - rect.left - context.left
-        context.getTimeLine(cords)
+        let cords = evt.clientX - rect.left - mountedThis.left
+        mountedThis.getTimeLine(cords)
       },
       false,
     )
-
-    // Для проверки
-    for (let date of this.allDates) {
-      let dayMax = new Date()
-      dayMax.setTime(date.finishAt)
-
-      let dayStart = new Date()
-      dayStart.setTime(date.startAt)
-
-      // eslint-disable-next-line no-console
-      //  console.log(dayStart.toLocaleString(), dayMax.toLocaleString(), date.doerId )
-    }
   },
 
   methods: {
     // TODO: отрисовывать на canvas шкалу времени
     // с учётом координат по оси X
+    drawing() {
+      this.init(this.ctx)
+      this.getNumberOfUnits()
+      this.left = -this.numberOfUnits * this.widthUnit
+      this.drawDates()
+      this.drawBlocks()
+      this.drawScroll()
+    },
     init(ctx) {
       this.allDates = []
       ctx.clearRect(
@@ -279,9 +263,6 @@ export default {
         this.$refs['canvas'].height,
       )
 
-      // this.userY = 0
-      //this.widthUnit = 0
-
       this.drawHorizontalLine(HEIGHT_OF_LABELS, 1, 'rgba(71, 60, 59, 1)')
 
       for (let i = 0; i < Object.values(this.doers).length; i++) {
@@ -289,6 +270,7 @@ export default {
           HEIGHT_OF_LABELS + ROW_HEIGHT / 2 + i * ROW_HEIGHT,
         )
       }
+
       // Prepare data
       let keys = Object.keys(calendarData.calendar)
       if (Array.isArray(keys) && keys.length > 0) {
@@ -378,20 +360,14 @@ export default {
       dayMax.setTime(this.gMaxX)
 
       while (dayMax >= this.allDates[0].startAt || dayMax >= dayMin) {
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
+        this.datesForScale.push(dayMax.toLocaleString('ru', OPTIONS))
         dayMax = new Date(dayMax - 86400000)
       }
-      // eslint-disable-next-line no-console
-      console.log(
-        dayMax.toLocaleString(),
-        this.allDates,
-        this.datesForScale,
-        dayMin.toLocaleString(),
-      )
     },
 
     getRangesForScale(range) {
       this.datesForScale = []
+      this.rangesForScale = []
 
       let date = new Date(this.gMinX)
       let dayMin = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -399,16 +375,41 @@ export default {
       let dayMax = new Date()
       dayMax.setTime(this.gMaxX)
 
-      this.datesForScale.push(dayMax.toLocaleString('ru', options))
+      let i = 0
 
-      while (dayMax >= dayMin) {
-        dayMax = new Date(dayMax - range)
-        this.datesForScale.push(dayMax.toLocaleString('ru', options))
-        dayMax = new Date(dayMax - 86400000)
-        if (dayMax >= dayMin) {
-          this.datesForScale.push(dayMax.toLocaleString('ru', options))
+      if (this.selected === 'MONTH' || this.selected === 'QUARTER') {
+        this.startMonthesForScale = []
+        while (dayMax >= dayMin) {
+          dayMax = new Date(dayMax.getFullYear(), dayMax.getMonth() - i)
+          this.datesForScale.push(
+            this.ucFirst(dayMax.toLocaleString('ru', OPTIONS_FOR_MONTH)),
+          )
+          this.startMonthesForScale.push(dayMax)
+          if (this.selected === 'MONTH') {
+            this.rangesForScale.push(this.getRangeForMonth(dayMax))
+            i++
+          } else {
+            this.rangesForScale.push(this.getRangeForQuater(dayMax))
+            i += 3
+          }
+
+          // eslint-disable-next-line no-console
+          console.log(this.rangesForScale, this.startMonthesForScale, i)
+        }
+        this.rangesForScale = this.rangesForScale.reverse()
+        this.startMonthesForScale = this.startMonthesForScale.reverse()
+      } else {
+        this.datesForScale.push(dayMax.toLocaleString('ru', OPTIONS))
+        while (dayMax >= dayMin) {
+          dayMax = new Date(dayMax - range)
+          this.datesForScale.push(dayMax.toLocaleString('ru', OPTIONS))
+          dayMax = new Date(dayMax - 86400000)
+          if (dayMax >= dayMin) {
+            this.datesForScale.push(dayMax.toLocaleString('ru', OPTIONS))
+          }
         }
       }
+
       this.getNumberOfUnits()
 
       this.restDayFinish = dayMax
@@ -420,15 +421,14 @@ export default {
         this.restDayFinish,
       )
     },
-
+    ucFirst(str) {
+      if (!str) return str
+      return str[0].toUpperCase() + str.slice(1)
+    },
     drawDates() {
       let ctx = this.ctx
       ctx.save()
 
-      // Первый юнит входящий (можно частично) в область просмотра
-      let start = new Date()
-      start.setTime(this.minX)
-      start.setHours(0, 0, 0, 0)
       // TODO: Пройти до конца области просмотра в цикле по размеру юнита
       // Подписать ось и расставить вертикали
 
@@ -469,20 +469,13 @@ export default {
           i++
         }
       }
-      if (this.selected === 'WEEK' || this.selected === 'MONTH') {
-        if (this.selected === 'WEEK') {
-          this.getRangesForScale(518400000)
-          this.datesForScale = this.datesForScale.reverse()
-          this.range = 604800000
-          this.widthUnit = UNITS_IN_PX.WEEK
-        } else {
-          this.getRangesForScale(2628000000)
-          this.datesForScale = this.datesForScale.reverse()
-          this.widthUnit = UNITS_IN_PX.MONTH
-          this.range = 2628000000 + 86400000
-        }
+      if (this.selected === 'WEEK') {
+        this.getRangesForScale(518400000)
+        this.datesForScale = this.datesForScale.reverse()
+        this.range = 604800000
+        this.widthUnit = UNITS_IN_PX.WEEK
 
-        let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
+        let maxWeeks = +(widthMax / this.widthUnit).toFixed(0)
 
         let widthMaxCanvas =
           ((this.datesForScale.length / 2).toFixed(0) - maxWeeks) *
@@ -519,10 +512,43 @@ export default {
           }
         }
       }
+      if (this.selected === 'MONTH') {
+        this.getRangesForScale()
+        this.datesForScale = this.datesForScale.reverse()
+        this.widthUnit = UNITS_IN_PX.MONTH
+
+        let maxWeeks = +(widthMax / this.widthUnit).toFixed(0)
+
+        let widthMaxCanvas =
+          (this.datesForScale.length - maxWeeks) * this.widthUnit +
+          (maxWeeks * this.widthUnit - widthMax)
+        if (this.left * -1 > widthMaxCanvas) {
+          this.left = -1 * widthMaxCanvas
+        }
+
+        ctx.font = '11px Verdana'
+
+        for (let day = 1; day <= this.datesForScale.length; day++) {
+          this.drawVerticalLine(
+            day * this.widthUnit + this.left,
+            0.2,
+            60,
+            this.$refs['canvas'].height - 10 - day,
+          )
+        }
+
+        for (let i = 0; i < this.datesForScale.length; i++) {
+          ctx.fillText(
+            this.datesForScale[i],
+            30 + i * this.widthUnit + this.left,
+            30,
+          )
+        }
+      }
       if (this.selected === 'QUARTER') {
-        this.getRangesForScale(3 * 2628000000)
-        this.range = 3 * 2628000000 + 86400000
+        this.getRangesForScale()
         this.widthUnit = UNITS_IN_PX.QUARTER
+        this.datesForScale = this.datesForScale.reverse()
 
         let maxWeeks = (widthMax / this.widthUnit).toFixed(0)
 
@@ -534,49 +560,118 @@ export default {
           this.left = -1 * widthMaxCanvas
         }
 
-        ctx.font = '11px Verdana'
+        ctx.font = '12px Verdana'
 
         for (let day = 1; day <= this.datesForScale.length / 2; day++) {
           this.drawVerticalLine(day * this.widthUnit + this.left)
         }
 
         for (let i = 0; i < this.datesForScale.length; i += 2) {
+          let period = this.datesForScale[i] + ' - ' + this.datesForScale[i + 1]
           if (this.datesForScale[i + 1]) {
             ctx.fillText(
-              this.datesForScale[i] + ' - ' + this.datesForScale[i + 1],
-              30 + (i / 2) * this.widthUnit + this.left,
+              period,
+              this.widthUnit - period.length*11 + (i / 2) * this.widthUnit + this.left,
               30,
             )
-          } else {
-            ctx.fillText(
-              this.datesForScale[i],
-              30 + (i / 2) * this.widthUnit + this.left,
-              30,
-            )
-          }
+          } 
         }
       }
       ctx.restore()
     },
 
     getNumberOfUnits() {
-      if (this.selected === 'DAY') {
+      if (this.selected === 'DAY' || this.selected === 'MONTH') {
         this.numberOfUnits = this.datesForScale.length
-      } else if (
-        this.selected === 'WEEK' ||
-        this.selected === 'MONTH' ||
-        this.selected === 'QUARTER'
-      ) {
+      } else if (this.selected === 'WEEK' || this.selected === 'QUARTER') {
         this.numberOfUnits = (this.datesForScale.length / 2).toFixed(0)
       }
-      this.left = -this.numberOfUnits * this.widthUnit
-      // eslint-disable-next-line no-console
-      console.log(
-        this.left,
-        this.numberOfUnits,
-        this.widthUnit,
-        this.datesForScale.length,
+    },
+
+    getRangeForMonth(date) {
+      let currentTime = new Date()
+      currentTime.setTime(date)
+
+      let startOfMonth = new Date(
+        currentTime.getFullYear(),
+        currentTime.getMonth(),
       )
+
+      let finishOfMonth = new Date(
+        currentTime.getFullYear(),
+        currentTime.getMonth() + 1,
+      )
+
+      return finishOfMonth - startOfMonth
+    },
+
+    getRangeForQuater(date) {
+      let currentTime = new Date()
+      currentTime.setTime(date)
+      currentTime = new Date(currentTime.getFullYear(), currentTime.getMonth())
+
+      let startOfMonth
+      for (let j = 0; j < 2; j++) {
+        for (let i = 0; i < this.startMonthesForScale.length; i++) {
+          if (
+            this.startMonthesForScale[i].toString() == currentTime.toString()
+          ) {
+            startOfMonth = currentTime
+            break
+          }
+        }
+        currentTime = new Date(
+          currentTime.getFullYear(),
+          currentTime.getMonth() + j,
+        )
+      }
+
+      let finishOfMonth = new Date(
+        currentTime.getFullYear(),
+        currentTime.getMonth() + 3,
+      )
+
+      return finishOfMonth - startOfMonth
+    },
+
+    getCordsForMonthScale(date) {
+      let currentTime = new Date()
+      currentTime.setTime(date)
+
+      let numberOfUnit
+
+      let start = new Date(currentTime.getFullYear(), currentTime.getMonth())
+
+      if (this.selected === 'MONTH') {
+        for (let i = 0; i < this.startMonthesForScale.length; i++) {
+          if (this.startMonthesForScale[i].toString() == start.toString()) {
+            numberOfUnit = i
+            break
+          }
+        }
+      } else if (this.selected === 'QUARTER') {
+        for (let j = 0; j < 2; j++) {
+          for (let i = 0; i < this.startMonthesForScale.length; i++) {
+            if (this.startMonthesForScale[i].toString() == start.toString()) {
+              numberOfUnit = i
+              break
+            }
+          }
+          start = new Date(
+            currentTime.getFullYear(),
+            currentTime.getMonth() + j,
+          )
+        }
+      }
+
+      return (
+        numberOfUnit * this.widthUnit +
+        (this.widthUnit / this.range) * (date - start)
+      )
+    },
+
+    getNumberOfUnit(coordinates) {
+      return Math.trunc(coordinates / this.widthUnit)
     },
 
     drawBlocks() {
@@ -585,6 +680,7 @@ export default {
 
       let startDay = new Date()
       startDay.setTime(this.gMaxX)
+
       let restDayStart = new Date(
         startDay.getFullYear(),
         startDay.getMonth(),
@@ -602,17 +698,18 @@ export default {
           finishDay.getMonth(),
           finishDay.getDate(),
         )
-      } else if (
-        this.selected === 'WEEK' ||
-        this.selected === 'MONTH' ||
-        this.selected === 'QUARTER'
-      ) {
+      } else if (this.selected === 'WEEK' || this.selected === 'QUARTER') {
         restDayFinish = new Date(
           this.restDayFinish.getFullYear(),
           this.restDayFinish.getMonth(),
           this.restDayFinish.getDate() + 1,
         )
         // restDayFinish = new Date(this.restDayFinish)
+      } else if (this.selected === 'MONTH') {
+        restDayFinish = new Date(
+          this.restDayFinish.getFullYear(),
+          this.restDayFinish.getMonth(),
+        )
       }
 
       this.restStart = restDayStart - startDay
@@ -623,7 +720,7 @@ export default {
       let padding = HEIGHT_OF_LABELS + LABEL_PADDING
 
       // eslint-disable-next-line no-console
-      console.log(restDayFinish.toLocaleString())
+      //console.log(restDayFinish.toLocaleString())
 
       for (let i = 0; i < this.allDates.length; i++) {
         if (
@@ -633,35 +730,29 @@ export default {
           padding += ROW_HEIGHT
         }
 
-        /*let startCords =
-          (this.widthUnit / this.range) *
-          (restDayStart - this.allDates[i].startAt)
-
-        let startBlock =
-          startCords -
-          (startCords % ((this.widthUnit * 86400000) / this.range)) +
-          (this.widthUnit * 86400000) / this.range -
-          (startCords % ((this.widthUnit * 86400000) / this.range))
-
-        let finishCords =
-          (this.widthUnit / this.range) *
-          (restDayStart - this.allDates[i].finishAt)
-
-        let finishBlock =
-          finishCords -
-          (finishCords % ((this.widthUnit * 86400000) / this.range)) +
-          (this.widthUnit * 86400000) / this.range -
-          (finishCords % ((this.widthUnit * 86400000) / this.range))
-
-        */
-
         let startCords =
           (this.widthUnit / this.range) *
           (this.allDates[i].startAt - restDayFinish)
 
+        if (this.selected === 'MONTH') {
+          this.range = this.getRangeForMonth(this.allDates[i].startAt)
+          startCords = this.getCordsForMonthScale(this.allDates[i].startAt)
+        } else if (this.selected === 'QUARTER') {
+          this.range = this.getRangeForQuater(this.allDates[i].startAt)
+          startCords = this.getCordsForMonthScale(this.allDates[i].startAt)
+        }
+
         let finishCords =
           (this.widthUnit / this.range) *
           (this.allDates[i].finishAt - restDayFinish)
+
+        if (this.selected === 'MONTH') {
+          this.range = this.getRangeForMonth(this.allDates[i].finishAt)
+          finishCords = this.getCordsForMonthScale(this.allDates[i].finishAt)
+        } else if (this.selected === 'QUARTER') {
+          this.range = this.getRangeForQuater(this.allDates[i].finishAt)
+          finishCords = this.getCordsForMonthScale(this.allDates[i].finishAt)
+        }
 
         ctx.fillStyle = 'rgba(55, 61, 51, 1)'
         ctx.fillRect(
@@ -682,8 +773,24 @@ export default {
       this.drawBlocks()
       this.drawScroll()
 
+      let numberOfUnit = Math.trunc(cords / this.widthUnit)
+
       let ms =
         (this.range * cords) / this.widthUnit - this.restFinish + this.gMinX
+
+      if (this.selected === 'MONTH') {
+        this.range = this.rangesForScale[this.getNumberOfUnit(cords)]
+        ms =
+          +this.startMonthesForScale[this.getNumberOfUnit(cords)] +
+          ((cords - numberOfUnit * UNITS_IN_PX.MONTH) / this.widthUnit) *
+            this.range
+      } else if (this.selected === 'QUARTER') {
+        this.range = this.rangesForScale[0]
+        ms =
+          +this.startMonthesForScale[0] +
+          ((cords - numberOfUnit * this.widthUnit) / this.widthUnit) *
+            this.range
+      }
 
       this.drawVerticalLine(
         cords + this.left,
@@ -704,7 +811,14 @@ export default {
         time.getMinutes(),
       )
 
-      this.time = timeNow.toLocaleString('ru', optionsFull)
+      // eslint-disable-next-line no-console
+      console.log(
+        this.startMonthesForScale,
+        this.getNumberOfUnit(cords),
+        this.widthUnit,
+      )
+
+      this.time = timeNow.toLocaleString('ru', OPTIONS_FULL)
     },
 
     drawScroll() {
@@ -737,22 +851,7 @@ export default {
         widthScroll,
         10,
       )
-
-      // eslint-disable-next-line no-console
-      //console.log(this.left, this.numberOfUnits, this.widthUnit, numberOfUnits)
-
       ctx.restore()
-    },
-
-    // Не задействовано
-    // Рисует аватар пользователя
-    drawAvatar(ctx, img) {
-      let avatar = new Image()
-      var userY = this.userY
-      avatar.onload = function() {
-        ctx.drawImage(avatar, 15, userY, 30, 30)
-      }
-      avatar.src = img
     },
   },
 }

@@ -37,6 +37,13 @@
         "startAt": 1581922800000,
         "finishAt": 1581948000000,
         "comment": null
+      },
+      {
+        "id": 2,
+        "rate": 2,
+        "startAt": 1580451070000,
+        "finishAt": 1580472670000,
+        "comment": null
       }
     ]
   },
