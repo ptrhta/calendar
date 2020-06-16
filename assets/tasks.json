@@ -2,59 +2,159 @@
   "calendar": {
     "516": [
       {
-        "id": 0,
+        "id": "0",
         "rate": 2,
         "startAt": 1582108491000,
         "finishAt": 1582137291000,
-        "comment": null
+        "comment": "Анализ бюджета",
+        "status": "В работе",
+        "subtasks": [
+          {
+            "id": "0.0",
+            "rate": 2,
+            "startAt":  1582108491000,
+            "finishAt": 1582127291000,
+            "status": "Выполнено",
+            "comment": "Сбор данных"
+          },
+          {
+            "id": "0.1",
+            "rate": 2,
+            "startAt": 1582127291000,
+            "finishAt": 1582137291000,
+            "status": "Выполнено",
+            "comment": "Анализ данных",
+            "subtasks": [
+              {
+                "id": "0.0.1",
+                "rate": 2,
+                "startAt":  1582108491000,
+                "finishAt": 1582127291000,
+                "status": "Выполнено",
+                "comment": "Сбор данных"
+              }
+            ]
+          }
+        ]
       },
       {
-        "id": 1,
+        "id": "1",
         "rate": 2,
         "startAt": 1581845691000,
         "finishAt": 1581870891000,
-        "comment": null
+        "status": "Выполнено",
+        "comment": "Анализ данных"
       },
       {
-        "id": 2,
+        "id": "2",
         "rate": 2,
         "startAt": 1581267600000,
         "finishAt": 1581278400000,
-        "comment": null
+        "status": "В работе",
+        "comment": "Полить цветочки"
       }
     ],
     "517": [
       {
-        "id": 0,
+        "id": "3",
         "rate": 2,
         "startAt": 1582011651000,
         "finishAt": 1582029651000,
-        "comment": null
+        "status": "Выполнено",
+        "comment": "Открыть холодильник"
       },
       {
-        "id": 1,
+        "id": "4",
         "rate": 2,
         "startAt": 1581922800000,
         "finishAt": 1581948000000,
-        "comment": null
+        "status": "В работе",
+        "comment": "Закрыть холодильник"
       },
       {
-        "id": 2,
+        "id": "5",
         "rate": 2,
         "startAt": 1580451070000,
         "finishAt": 1580472670000,
-        "comment": null
+        "status": "Выполнено",
+        "comment": "Погладить кота"
+      }
+    ],
+    "518": [
+      {
+        "id": "0",
+        "rate": 2,
+        "startAt": 1582008491000,
+        "finishAt": 1582037291000,
+        "comment": "Анализ бюджета",
+        "status": "В работе",
+        "subtasks": [
+          {
+            "id": "0.2",
+            "rate": 2,
+            "startAt":  1582108491000,
+            "finishAt": 1582127291000,
+            "status": "Выполнено",
+            "comment": "Сбор данных"
+          },
+          {
+            "id": "0.3",
+            "rate": 2,
+            "startAt": 1582127291000,
+            "finishAt": 1582137291000,
+            "status": "В работе",
+            "comment": "Анализ данных",
+            "subtasks": [
+              {
+                "id": "0.3.0",
+                "rate": 2,
+                "startAt":  1582108491000,
+                "finishAt": 1582127291000,
+                "status": "В работе",
+                "comment": "Сбор данных"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "519": [
+      {
+        "id": "0",
+        "rate": 2,
+        "startAt": 1577877572000,
+        "finishAt": 1577888372000,
+        "comment": "Анализ бюджета",
+        "status": "В работе",
+        "subtasks": [
+          {
+            "id": "0.4",
+            "rate": 2,
+            "startAt":  1580541572000,
+            "finishAt": 1580555972000,
+            "status": "Выполнено",
+            "comment": "Сделать охлаждающий напиток"
+          },
+          {
+            "id": "0.5",
+            "rate": 2,
+            "startAt":  1581680432000,
+            "finishAt": 1581684032000,
+            "status": "Выполнено",
+            "comment": "Выпить охлаждающий напиток"
+          }
+        ]
       }
     ]
   },
   "doers": {
     "516": {
-      "id": 516,
+      "id": "516",
       "employeeSlug": "GzmdMZj3vp",
       "firstName": "Александр",
       "lastName": "Карпов",
       "middleName": "Александрович",
-      "position": "генеральный директор",
+      "position": "Генеральный директор",
       "avatar": "https://s3.amazonaws.com/uifaces/faces/twitter/andyvitale/128.jpg",
       "singularTitle": "ООО \"Бизнес-среда \"НАРАБОТЕ\"",
       "status": 2,
@@ -65,12 +165,44 @@
       "totalActualTime": "seconds"
     },
     "517": {
-      "id": 517,
+      "id": "517",
       "employeeSlug": "GzmdMZj3vp",
       "firstName": "Александр",
       "lastName": "Карпов",
       "middleName": "Александрович",
-      "position": "генеральный директор",
+      "position": "Генеральный директор",
+      "avatar": "https://s3.amazonaws.com/uifaces/faces/twitter/ashleyford/128.jpg",
+      "singularTitle": "ООО \"Бизнес-среда \"НАРАБОТЕ\"",
+      "status": 2,
+      "isInitiator": true,
+      "isPerformer": true,
+      "totalPlanIntervals": 5,
+      "totalPlanTime": "seconds",
+      "totalActualTime": "seconds"
+    },
+    "518": {
+      "id": "518",
+      "employeeSlug": "GzmdMZj3vp",
+      "firstName": "Виктор",
+      "lastName": "Дубровин",
+      "middleName": "Александрович",
+      "position": "Генеральный директор",
+      "avatar": "https://s3.amazonaws.com/uifaces/faces/twitter/ashleyford/128.jpg",
+      "singularTitle": "ООО \"Бизнес-среда \"НАРАБОТЕ\"",
+      "status": 2,
+      "isInitiator": true,
+      "isPerformer": true,
+      "totalPlanIntervals": 5,
+      "totalPlanTime": "seconds",
+      "totalActualTime": "seconds"
+    },
+    "519": {
+      "id": "519",
+      "employeeSlug": "GzmdMZj3vp",
+      "firstName": "Виктор",
+      "lastName": "Дубровин",
+      "middleName": "Александрович",
+      "position": "Генеральный директор",
       "avatar": "https://s3.amazonaws.com/uifaces/faces/twitter/ashleyford/128.jpg",
       "singularTitle": "ООО \"Бизнес-среда \"НАРАБОТЕ\"",
       "status": 2,
@@ -90,7 +222,7 @@
     "2": {
       "id": 2,
       "title": "Сверхурочное рабочее время",
-      "rate": "1.50000"
+      "rate": "2.00000"
     }
   }
 }
